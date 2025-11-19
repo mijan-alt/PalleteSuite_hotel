@@ -1,0 +1,201 @@
+import type { Metadata } from 'next'
+import { PayloadRedirects } from '@/components/PayloadRedirects'
+import configPromise from '@payload-config'
+import { getPayload } from 'payload'
+import { draftMode } from 'next/headers'
+import React, { cache } from 'react'
+import { notFound } from 'next/navigation'
+
+import { RenderBlocks } from '@/blocks/RenderBlocks'
+import { RenderHero } from '@/heros/RenderHero'
+import { generateMeta } from '@/utilities/generateMeta'
+import { LivePreviewListener } from '@/components/LivePreviewListener'
+
+export async function generateStaticParams() {
+  const payload = await getPayload({ config: configPromise })
+  const pages = await payload.find({
+    collection: 'pages',
+    draft: false,
+    limit: 1000,
+    overrideAccess: false,
+    pagination: false,
+    select: {
+      slug: true,
+    },
+  })
+
+  console.log('pages', pages.docs)
+
+  // Map pages to their slug arrays
+  const params = pages.docs
+    ?.map((doc) => {
+      if (!doc.slug) return null
+
+      // Handle homepage/root - return empty slug array
+      if (doc.slug === 'home') {
+        return { slug: [] }
+      }
+
+      // For all other pages, split the slug by '/' to handle nested routes
+      // Example: 'services/web-development' becomes ['services', 'web-development']
+      const slugSegments = doc.slug.split('/').filter(Boolean)
+      return { slug: slugSegments }
+    })
+    .filter(Boolean)
+
+  return params
+}
+
+type Args = {
+  params: Promise<{
+    slug?: string[]
+  }>
+}
+
+export default async function Page({ params: paramsPromise }: Args) {
+  const { isEnabled: draft } = await draftMode()
+  const { slug = [] } = await paramsPromise
+
+  // For nested routes, use the last segment as the slug
+  // Example: ['services', 'web-development'] -> query by 'web-development'
+  const pageSlug = slug.length > 0 ? slug[slug.length - 1] : 'home'
+  const currentPath = slug.length > 0 ? `/${slug.join('/')}` : '/'
+
+  // Query page by its slug (last segment for nested pages)
+  const page = await queryPageBySlug({ slug: pageSlug, draft })
+
+  if (!page) {
+    return <PayloadRedirects url={currentPath} />
+  }
+
+  const { hero, layout, breadcrumbs, title } = page
+
+  return (
+    <article className="">
+      <PayloadRedirects disableNotFound url={currentPath} />
+
+      {draft && <LivePreviewListener />}
+
+      <RenderHero {...hero} breadcrumbs={breadcrumbs} currentPage={title} />
+
+      {layout && Array.isArray(layout) && layout.length > 0 && <RenderBlocks blocks={layout} />}
+    </article>
+  )
+}
+
+export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
+  const { isEnabled: draft } = await draftMode()
+  const { slug = [] } = await paramsPromise
+  
+  // Use last segment for nested routes
+  const pageSlug = slug.length > 0 ? slug[slug.length - 1] : 'home'
+
+  const page = await queryPageBySlug({ slug: pageSlug, draft })
+
+  return generateMeta({ doc: page })
+}
+
+// Efficient query that matches pages by their slug
+const queryPageBySlug = cache(async ({ slug, draft }: { slug: string; draft: boolean }) => {
+  const payload = await getPayload({ config: configPromise })
+
+  const result = await payload.find({
+    collection: 'pages',
+    draft,
+    limit: 1,
+    pagination: false,
+    overrideAccess: draft,
+    where: {
+      slug: {
+        equals: slug,
+      },
+    },
+  })
+
+  return result.docs?.[0] || null
+})
+
+
+
+
+
+
+
+
+==============================================================
+import type { Metadata } from 'next'
+import { PayloadRedirects } from '@/components/PayloadRedirects'
+import { draftMode } from 'next/headers'
+import React from 'react'
+import { unstable_cache } from 'next/cache'
+import { RenderBlocks } from '@/blocks/RenderBlocks'
+import { RenderHero } from '@/heros/RenderHero'
+import { generateMeta } from '@/utilities/generateMeta'
+import { LivePreviewListener } from '@/components/LivePreviewListener'
+
+import { fetchPage, fetchPages } from '../_data'
+
+// Conditional caching based on draft mode
+const getPage = async (slug:any, draft?:any) =>
+  draft ? fetchPage(slug) : unstable_cache(fetchPage, [`page-${slug}`])(slug)
+
+
+
+export default async function Page({ 
+  params 
+}: { 
+  params: Promise<{ slug?: string[] }> 
+}) {
+  const { isEnabled: draft } = await draftMode()
+ const { slug } = await params
+
+
+
+  const url = '/' + (Array.isArray(slug) ? slug.join('/') : slug)
+  const page = await getPage(slug, draft)
+
+
+ console.log('Fetched page:', page)
+
+  if (!page) {
+    return <PayloadRedirects url={url} />
+  }
+
+  const { hero, layout, breadcrumbs, title } = page
+
+  return (
+    <article>
+      <PayloadRedirects disableNotFound url={url} />
+      {draft && <LivePreviewListener />}
+      {/* <RenderHero {...hero} breadcrumbs={breadcrumbs} currentPage={title} /> */}
+      {layout && Array.isArray(layout) && layout.length > 0 && (
+        <RenderBlocks blocks={layout} />
+      )}
+    </article>
+  )
+}
+
+export async function generateStaticParams() {
+  const getPages = unstable_cache(fetchPages, ['pages'])
+  const pages = await getPages()
+
+  console.log('Generating static params for pages:', pages)
+
+  return pages.map(({ breadcrumbs }) => ({
+    slug: breadcrumbs?.[breadcrumbs.length - 1]?.url?.replace(/^\/|\/$/g, '').split('/'),
+  }))
+}
+
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: Promise<{ slug: any }> 
+}): Promise<Metadata> {
+  const { isEnabled: draft } = await draftMode()
+  const { slug } = await params
+  
+  const page = await getPage(slug, draft)
+
+  return generateMeta({ doc: page })
+}
+

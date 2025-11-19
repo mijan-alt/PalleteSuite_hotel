@@ -1,0 +1,109 @@
+'use client'
+import React from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import Link from 'next/link'
+import { Media } from '@/components/Media'
+import { HeroProps } from '../heroType'
+
+export const HighImpactHero: React.FC<HeroProps> = ({ media1, media2, media3 }) => {
+  return (
+    <section className="bg-background py-16 lg:py-24 overflow-hidden">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          {/* Text Content */}
+          <div className="w-full">
+            <Badge className="mb-4 inline-flex w-fit items-center gap-1 rounded-md border border-transparent bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+              Leading Energy Solutions Since 1998
+            </Badge>
+
+            <h1 className="mb-4 text-4xl font-bold leading-tight text-foreground md:text-5xl lg:text-6xl">
+              Powering Progress Through Innovative Energy Solutions
+            </h1>
+
+            <p className="mb-8 text-lg text-foreground md:text-xl">
+              Comprehensive oil and gas services from exploration to distribution. Delivering reliable energy with cutting-edge technology and sustainable practices.
+            </p>
+
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <Button asChild size="lg" className="w-full sm:w-auto">
+                <Link href="#services">Our Services</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
+                <Link href="/contact">Partner with Us</Link>
+              </Button>
+            </div>
+          </div>
+
+          {/* Image Grid */}
+          <div className="w-full">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-[3fr_2fr] md:grid-rows-[auto_auto]">
+              {/* Main Image */}
+              <Card className="overflow-hidden rounded-3xl md:col-span-2">
+                <CardContent className="h-full p-0">
+                  {media1 ? (
+                    <Media
+                      resource={media1}
+                      className="h-full w-full object-cover"
+                      imgClassName="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-64 w-full items-center justify-center bg-muted md:h-80">
+                      <span className="text-muted-foreground">Oil Rig Operations</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Testimonial */}
+              <Card className="flex flex-col gap-4 overflow-hidden rounded-3xl bg-green-500 p-5 md:flex-row md:items-center md:gap-6">
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl md:h-28 md:w-28">
+                  {media2 ? (
+                    <Media
+                      resource={media2}
+                      className="h-full w-full object-cover"
+                      imgClassName="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-muted">
+                      <span className="text-xs text-muted-foreground">Client</span>
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-medium text-foreground md:text-lg">
+                    "Sunlink's expertise in offshore drilling has increased our production efficiency by 40% while maintaining the highest safety standards."
+                  </p>
+                  <p className="mt-1 text-sm text-foreground/80">Michael Chen, Energy Solutions Director</p>
+                </div>
+              </Card>
+
+              {/* Secondary Image - Uncomment if needed */}
+              {/* <Card className="overflow-hidden rounded-3xl">
+                <CardContent className="h-full p-0">
+                  {media3 ? (
+                    <Media
+                      resource={media3}
+                      className="h-full w-full object-cover"
+                      imgClassName="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-48 w-full items-center justify-center bg-muted md:h-full">
+                      <span className="text-muted-foreground">Pipeline Infrastructure</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card> */}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Optional subtle background decoration */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute right-0 top-0 h-96 w-96 -translate-y-1/2 translate-x-1/2 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
+      </div>
+    </section>
+  )
+}

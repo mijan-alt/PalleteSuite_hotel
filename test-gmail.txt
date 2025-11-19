@@ -1,0 +1,81 @@
+formBuilderPlugin({
+  fields: {
+    payment: false,
+  },
+  formOverrides: {
+    fields: ({ defaultFields }) => {
+      return defaultFields.map((field) => {
+        if ('name' in field && field.name === 'confirmationMessage') {
+          return {
+            ...field,
+            editor: lexicalEditor({
+              features: ({ rootFeatures }) => {
+                return [
+                  ...rootFeatures,
+                  FixedToolbarFeature(),
+                  HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
+                ]
+              },
+            }),
+          }
+        }
+        return field
+      })
+    },
+  },
+  // ✅ THIS IS THE IMPORTANT PART - Sends email to YOU when someone submits
+  formSubmissionOverrides: {
+    hooks: {
+      afterChange: [
+        async ({ doc, req, operation }) => {
+          // Only for NEW submissions (not edits)
+          if (operation !== 'create') return doc
+
+          console.log('📧 Someone just submitted a form! Sending you an email...')
+
+          try {
+            // Format the data they submitted
+            const formData = doc.submissionData
+              .map((field: any) => `${field.field}: ${field.value}`)
+              .join('\n')
+
+            // Send email to YOU
+            await req.payload.sendEmail({
+              to: 'mijanigoni@gmail.com', // ✅ YOUR EMAIL HERE
+              from: process.env.SMTP_USER || 'mijanigoni@gmail.com',
+              subject: '🔔 New Contact Form Submission',
+              text: `
+You received a new form submission!
+
+${formData}
+
+Submitted at: ${new Date().toLocaleString()}
+              `,
+              html: `
+                <h2>🔔 New Form Submission</h2>
+                <p>Someone just submitted your contact form:</p>
+                <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
+                  ${doc.submissionData.map((field: any) => `
+                    <div style="margin-bottom: 15px;">
+                      <strong>${field.field}:</strong><br/>
+                      ${field.value}
+                    </div>
+                  `).join('')}
+                </div>
+                <p style="color: #666; margin-top: 20px;">
+                  Submitted: ${new Date().toLocaleString()}
+                </p>
+              `,
+            })
+
+            console.log('✅ Email sent to you successfully!')
+          } catch (error) {
+            console.error('❌ Failed to send email:', error)
+          }
+
+          return doc
+        },
+      ],
+    },
+  },
+}),

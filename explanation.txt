@@ -1,0 +1,190 @@
+import type { Metadata } from 'next'
+import { PayloadRedirects } from '@/components/PayloadRedirects'
+import configPromise from '@payload-config'
+import { getPayload } from 'payload'
+import { draftMode } from 'next/headers'
+import React, { cache } from 'react'
+import { notFound } from 'next/navigation'
+
+import { RenderBlocks } from '@/blocks/RenderBlocks'
+import { RenderHero } from '@/heros/RenderHero'
+import { generateMeta } from '@/utilities/generateMeta'
+import { LivePreviewListener } from '@/components/LivePreviewListener'
+
+export async function generateStaticParams() {
+  console.log('🔄 generateStaticParams: Starting...')
+  
+  const payload = await getPayload({ config: configPromise })
+  const pages = await payload.find({
+    collection: 'pages',
+    draft: false,
+    limit: 1000,
+    overrideAccess: false,
+    pagination: false,
+    select: {
+      slug: true,
+      breadcrumbs: true,
+    },
+  })
+
+  console.log('📄 generateStaticParams: Found pages:', pages.docs?.length)
+  console.log('📄 generateStaticParams: Pages data:', JSON.stringify(pages.docs, null, 2))
+
+  const params = pages.docs?.map((doc) => {
+    console.log('🔍 Processing page:', { slug: doc.slug, breadcrumbs: doc.breadcrumbs })
+    
+    // Handle nested routes by using breadcrumbs to construct the full path
+    if (doc.breadcrumbs && doc.breadcrumbs.length > 1) {
+      console.log('🪜 Has breadcrumbs (nested page):', doc.breadcrumbs)
+      
+      // Extract slug segments from breadcrumbs URL
+      const fullPath = doc.breadcrumbs[doc.breadcrumbs.length - 1]?.url
+      console.log('🔗 Full path from breadcrumbs:', fullPath)
+      
+      if (fullPath && typeof fullPath === 'string') {
+        const slugSegments = fullPath.split('/').filter(Boolean)
+        console.log('✂️ Slug segments:', slugSegments)
+        return { slug: slugSegments }
+      }
+    }
+    
+    // Handle root level pages
+    if (doc.slug === 'web-design-agency') {
+      console.log('🏠 Root page detected:', doc.slug)
+      return { slug: [] } // Empty array for root page
+    }
+    
+    console.log('📃 Single level page:', doc.slug)
+    return { slug: [doc.slug] }
+  }).filter(Boolean)
+
+  console.log('✅ generateStaticParams: Final params:', JSON.stringify(params, null, 2))
+  return params
+}
+
+type Args = {
+  params: Promise<{
+    slug?: string[]
+  }>
+}
+
+export default async function Page({ params: paramsPromise }: Args) {
+  console.log('🚀 Page component: Starting render...')
+  
+  const { isEnabled: draft } = await draftMode()
+  console.log('📝 Draft mode:', draft)
+  
+  const { slug = [] } = await paramsPromise
+  console.log('🔤 URL slug array:', slug)
+  
+  // Construct the current URL path
+  const currentPath = slug.length > 0 ? `/${slug.join('/')}` : '/'
+  console.log('🌐 Current path:', currentPath)
+  
+  // For root path, use the default slug
+  const resolvedSlug = slug.length === 0 ? 'web-design-agency' : slug[slug.length - 1]
+  console.log('🎯 Resolved slug for query:', resolvedSlug)
+  
+  const page = await queryPageBySlug({ slug: resolvedSlug })
+  console.log('📋 Found page:', page ? { slug: page.slug, title: page.title } : 'null')
+  console.log('🪜 Page breadcrumbs:', page?.breadcrumbs)
+
+  if (!page) {
+    console.log('❌ Page not found, redirecting to:', currentPath)
+    return <PayloadRedirects url={currentPath} />
+  }
+
+  // Validate nested route structure
+  if (page.breadcrumbs && page.breadcrumbs.length > 1) {
+    console.log('🔍 Validating nested route structure...')
+    const expectedUrl = page.breadcrumbs[page.breadcrumbs.length - 1]?.url
+    console.log('🎯 Expected URL from breadcrumbs:', expectedUrl)
+    console.log('🌐 Current URL:', currentPath)
+    
+    // Check if the current path matches the expected nested URL structure
+    if (expectedUrl && typeof expectedUrl === 'string' && expectedUrl !== currentPath) {
+      console.log('🔀 URL mismatch, redirecting from', currentPath, 'to', expectedUrl)
+      return <PayloadRedirects url={expectedUrl} />
+    } else {
+      console.log('✅ URL validation passed')
+    }
+  } else if (slug.length > 1) {
+    console.log('❌ Invalid nested URL - page has no nested breadcrumbs but URL has multiple segments')
+    // If URL has multiple segments but page doesn't have nested breadcrumbs, it's invalid
+    notFound()
+  } else {
+    console.log('ℹ️ Single level page - no nested validation needed')
+  }
+
+  const { hero, layout } = page
+  console.log('🎨 Page components:', { 
+    hasHero: !!hero, 
+    layoutBlocks: layout?.length || 0 
+  })
+
+  console.log('✅ Page component: Rendering complete')
+  return (
+    <article className="">
+      <PayloadRedirects disableNotFound url={currentPath} />
+
+      {draft && <LivePreviewListener />}
+
+      <RenderHero {...hero} />
+
+      {layout && Array.isArray(layout) && layout.length > 0 && <RenderBlocks blocks={layout} />}
+    </article>
+  )
+}
+
+export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
+  const { slug = [] } = await paramsPromise
+  const resolvedSlug = slug.length === 0 ? 'web-design-agency' : slug[slug.length - 1]
+  
+  const page = await queryPageBySlug({
+    slug: resolvedSlug,
+  })
+
+  return generateMeta({ doc: page })
+}
+
+const queryPageBySlug = cache(async ({ slug }: { slug: string }) => {
+  const { isEnabled: draft } = await draftMode()
+
+  const payload = await getPayload({ config: configPromise })
+
+  const result = await payload.find({
+    collection: 'pages',
+    draft,
+    limit: 1,
+    pagination: false,
+    overrideAccess: draft,
+    where: {
+      slug: {
+        equals: slug,
+      },
+    },
+  })
+
+  return result.docs?.[0] || null
+})
+
+// Helper function to get page by full path (alternative approach)
+const queryPageByPath = cache(async ({ path }: { path: string }) => {
+  const { isEnabled: draft } = await draftMode()
+  const payload = await getPayload({ config: configPromise })
+
+  const result = await payload.find({
+    collection: 'pages',
+    draft,
+    limit: 1,
+    pagination: false,
+    overrideAccess: draft,
+    where: {
+      'breadcrumbs.url': {
+        equals: path,
+      },
+    },
+  })
+
+  return result.docs?.[0] || null
+})

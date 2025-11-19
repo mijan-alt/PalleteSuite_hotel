@@ -1,0 +1,69 @@
+<Dialog open={showDatePicker} onOpenChange={setShowDatePicker}>
+  <DialogContent className="max-w-2xl p-8">
+    <DialogHeader className="mb-6">
+      <DialogTitle className="text-2xl font-semibold text-center">
+        Select Your Stay
+      </DialogTitle>
+    </DialogHeader>
+
+    <div className="flex justify-center">
+      <Calendar
+        mode="range"
+        selected={{ from: checkIn, to: checkOut }}
+        onSelect={(range: any) => {
+          setCheckIn(range?.from)
+          setCheckOut(range?.to)
+          if (range?.from && range?.to) {
+            setShowDatePicker(false)
+            toast.success('Dates selected!')
+          }
+        }}
+        disabled={(date) => date < new Date()}
+        className="rounded-2xl border-2 border-gray-200 shadow-2xl"
+        classNames={{
+          // Make everything BIGGER and more luxurious
+          months: "flex flex-col sm:flex-row space-y-8 sm:space-y-0 sm:space-x-8",
+          month: "space-y-6",
+          caption: "flex justify-center pt-2 relative items-center",
+          caption_label: "text-2xl font-bold text-gray-900",
+          nav: "space-x-2",
+          nav_button: "h-12 w-12 bg-gray-100 hover:bg-gray-200 rounded-xl border-2 border-gray-300 p-0 font-semibold text-lg",
+          nav_button_previous: "absolute left-4",
+          nav_button_next: "absolute right-4",
+          table: "w-full border-collapse space-y-2",
+          head_row: "flex",
+          head_cell: "text-gray-600 rounded-md w-16 text-lg font-bold",
+          row: "flex w-full mt-3",
+          cell: "relative p-0 text-center text-lg focus-within:relative focus-within:z-20",
+          day: "h-16 w-16 rounded-xl hover:bg-red-50 hover:text-red-700 font-medium transition-all",
+          day_selected: "bg-red-700 text-white hover:bg-red-800 hover:text-white font-bold text-xl",
+          day_today: "bg-gray-100 text-gray-900 font-bold",
+          day_disabled: "text-gray-400 opacity-50",
+          day_range_middle: "bg-red-100 text-red-900",
+          day_range_start: "bg-red-700 text-white rounded-l-xl",
+          day_range_end: "bg-red-700 text-white rounded-r-xl",
+        }}
+        components={{
+          // Optional: Make the day numbers even bigger
+          DayContent: ({ date }) => (
+            <span className="text-lg font-medium">
+              {date.getDate()}
+            </span>
+          ),
+        }}
+      />
+    </div>
+
+    {/* Optional: Show selected dates preview */}
+    {hasValidDates && checkIn && checkOut && (
+      <div className="mt-8 text-center p-6 bg-green-50 rounded-2xl border-2 border-green-200">
+        <p className="text-2xl font-bold text-green-800">
+          {format(checkIn, "EEEE, MMMM d")} – {format(checkOut, "EEEE, MMMM d")}
+        </p>
+        <p className="text-lg text-green-700 mt-2">
+          {totalNights} night{totalNights > 1 ? "s" : ""} • ${totalPrice} total
+        </p>
+      </div>
+    )}
+  </DialogContent>
+</Dialog>

@@ -1,0 +1,89 @@
+Complete Color Usage Guide:
+Primary Blue (240, 68.97%, 54.51%) - #4C5FE8
+Use for:
+
+Navigation bar background
+Main CTA buttons ("Learn More", "Get Started")
+Section headers and titles
+Footer background
+Active navigation links
+Icon backgrounds in feature cards
+
+Secondary Yellow (40.2, 100%, 61.37%) - #FFCF1D
+Use for:
+
+Logo preservation (keep as is)
+Hover states on primary buttons
+Important badges/labels (like your "Portfolio" tags)
+Highlighting key statistics in "Our Impact in Numbers"
+Small decorative elements and underlines
+Badge notifications
+
+Accent Coral/Orange (16, 100%, 66%) - #FF5229
+Use for:
+
+Secondary CTA buttons ("Contact Us", "Read More")
+Link hover states
+Active form inputs borders
+Progress indicators
+Important alerts or announcements
+Social media icon hovers
+Bullet points in lists
+Call-out boxes or info cards
+The circular badge elements you have
+
+Muted (240, 73.91%, 95.49%)
+Use for:
+
+Card backgrounds (like your stats cards)
+Alternate section backgrounds
+Input field backgrounds
+Disabled button states
+
+Background & Foreground
+Use for:
+
+Main page background (white)
+Body text (dark foreground)
+Content areas
+
+
+Specific Application to Your Website:
+css/* Hero Section */
+- Background: --background (white)
+- Title: --foreground (dark)
+- Main CTA: --primary with --primary-foreground text
+- Secondary CTA: --accent with --accent-foreground text
+
+/* "Our Journey" Cards */
+- Card background: --card
+- Icons: --primary or --accent (alternate)
+- "Learn More" links: --accent with hover to --primary
+
+/* Stats Section ("Our Impact in Numbers") */
+- Background: --muted (light blue tint)
+- Numbers: --primary or --secondary (for emphasis)
+- Labels: --muted-foreground
+
+/* Portfolio/Service Badges */
+- Background: --accent
+- Text: --accent-foreground
+
+/* Blog Post Cards */
+- Card: --card
+- Category tags: --secondary
+- Read more links: --accent
+
+/* Footer */
+- Background: --primary (dark blue)
+- Text: --primary-foreground
+- Link hovers: --secondary or --accent
+
+Color Harmony:
+Your palette creates a triadic harmony:
+
+🔵 Blue (trust, professionalism)
+🟡 Yellow (energy, optimism)
+🟠 Coral/Orange (action, warmth)
+
+This is perfect for an energy company - professional yet energetic! The coral accent adds the "call-to-action" punch without overwhelming your yellow logo.
