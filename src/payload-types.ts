@@ -72,7 +72,6 @@ export interface Config {
     categories: Category;
     users: User;
     blogs: Blog;
-    amenities: Amenity;
     rooms: Room;
     faqs: Faq;
     bookings: Booking;
@@ -93,7 +92,6 @@ export interface Config {
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     blogs: BlogsSelect<false> | BlogsSelect<true>;
-    amenities: AmenitiesSelect<false> | AmenitiesSelect<true>;
     rooms: RoomsSelect<false> | RoomsSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
     bookings: BookingsSelect<false> | BookingsSelect<true>;
@@ -114,11 +112,15 @@ export interface Config {
     header: Header;
     footer: Footer;
     'contact-info': ContactInfo;
+    hotelAmenities: HotelAmenity;
+    businessLocation: BusinessLocation;
   };
   globalsSelect: {
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
     'contact-info': ContactInfoSelect<false> | ContactInfoSelect<true>;
+    hotelAmenities: HotelAmenitiesSelect<false> | HotelAmenitiesSelect<true>;
+    businessLocation: BusinessLocationSelect<false> | BusinessLocationSelect<true>;
   };
   locale: null;
   user: User & {
@@ -304,41 +306,16 @@ export interface Page {
           }
         | Hero5Props
         | AboutMissionProps
-        | {
-            eyebrow?: string | null;
-            heading: string;
-            description?: string | null;
-            accommodations?:
-              | {
-                  room: number | Room;
-                  /**
-                   * Override default room image
-                   */
-                  customImage?: (number | null) | Media;
-                  id?: string | null;
-                }[]
-              | null;
-            cta?: {
-              text?: string | null;
-              link?: string | null;
-            };
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'accommodationsBlock';
-          }
-        | {
-            image: number | Media;
-            /**
-             * Select the FAQ items to display.
-             */
-            faqs: (number | Faq)[];
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'faqAccordion';
-          }
-        | RoomsCollectionProps
-        | RoomsGridProps
+        | FaAccordionProp
         | AboutSectionProps
+        | {
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'featuredRooms';
+          }
+        | AmenitiesCarouselBlock
+        | AboutUsBlockProp
+        | BusinessMapProp
       )[]
     | null;
   meta?: {
@@ -1022,119 +999,32 @@ export interface AboutMissionProps {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "rooms".
+ * via the `definition` "FaAccordionProp".
  */
-export interface Room {
-  id: number;
-  name: string;
-  slug: string;
-  type: 'deluxe' | 'standard' | 'superior' | 'presidential' | 'pearl-harbor' | 'grand-deluxe' | 'federal-grand';
-  featured?: boolean | null;
-  description: string;
-  pricePerNight: number;
-  gallery: {
-    image: number | Media;
+export interface FaAccordionProp {
+  image: number | Media;
+  faqs: {
+    question: string;
+    answer: {
+      root: {
+        type: string;
+        children: {
+          type: string;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
     id?: string | null;
   }[];
-  features?: {
-    squareFeet?: number | null;
-    beds?: ('1' | '2' | '3' | 'king' | 'queen') | null;
-    guests?: number | null;
-  };
-  amenities?:
-    | {
-        amenity?: (number | null) | Amenity;
-        id?: string | null;
-      }[]
-    | null;
-  availability?: ('available' | 'limited' | 'sold-out') | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "amenities".
- */
-export interface Amenity {
-  id: number;
-  name: string;
-  icon?:
-    | (
-        | 'wifi'
-        | 'tv'
-        | 'ac'
-        | 'minibar'
-        | 'safe'
-        | 'balcony'
-        | 'ocean-view'
-        | 'pool'
-        | 'spa'
-        | 'gym'
-        | 'restaurant'
-        | 'room-service'
-      )
-    | null;
-  description?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "faqs".
- */
-export interface Faq {
-  id: number;
-  question: string;
-  answer: {
-    root: {
-      type: string;
-      children: {
-        type: string;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "RoomsCollectionProps".
- */
-export interface RoomsCollectionProps {
-  eyebrow?: string | null;
-  heading: string;
-  displayType?: ('featured' | 'selected' | 'all') | null;
-  selectedRooms?: (number | Room)[] | null;
-  /**
-   * Number of rooms to display
-   */
-  limit?: number | null;
-  layout?: ('grid-3' | 'grid-4' | 'carousel') | null;
   id?: string | null;
   blockName?: string | null;
-  blockType: 'roomsCollectionBlock';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "RoomsGridProps".
- */
-export interface RoomsGridProps {
-  heading: string;
-  description?: string | null;
-  displayType?: ('all' | 'category' | 'selected') | null;
-  roomCategory?: ('deluxe' | 'standard' | 'superior' | 'suite') | null;
-  selectedRooms?: (number | Room)[] | null;
-  columns: '2' | '3' | '4';
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'roomsGridBlock';
+  blockType: 'faqAccordion';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1179,11 +1069,229 @@ export interface AboutSectionProps {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "AmenitiesCarouselBlock".
+ */
+export interface AmenitiesCarouselBlock {
+  title?: string | null;
+  subtitle?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'amenitiesCarousel';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "AboutUsBlockProp".
+ */
+export interface AboutUsBlockProp {
+  /**
+   * Small uppercase text above the main title
+   */
+  preTitle?: string | null;
+  title: string;
+  subtitle?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Main hero image (recommended 1200×800px)
+   */
+  imageMain: number | Media;
+  /**
+   * Smaller accent image (recommended 600×700px)
+   */
+  imageFloating: number | Media;
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  philosophyTitle?: string | null;
+  philosophyText?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  gallery?:
+    | {
+        image: number | Media;
+        id?: string | null;
+      }[]
+    | null;
+  closingText?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  ctaText?: string | null;
+  ctaLink?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'aboutUs';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "BusinessMapProp".
+ */
+export interface BusinessMapProp {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'businessMap';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rooms".
+ */
+export interface Room {
+  id: number;
+  name: string;
+  description: string;
+  /**
+   * Auto-generated from name
+   */
+  slug: string;
+  type: 'deluxe' | 'standard' | 'superior' | 'presidential' | 'pearl-harbor' | 'grand-deluxe' | 'federal-grand';
+  /**
+   * Generate sequential room numbers (e.g., 101-112). Leave blank to manually add room numbers below.
+   */
+  roomNumberRange?: {
+    startNumber?: number | null;
+    endNumber?: number | null;
+    prefix?: string | null;
+  };
+  /**
+   * Individual room numbers. Generated automatically if you use the range above, or add manually.
+   */
+  roomNumbers?:
+    | {
+        number: string;
+        id?: string | null;
+      }[]
+    | null;
+  featured?: boolean | null;
+  /**
+   * Total rooms of this type (auto-calculated from room numbers)
+   */
+  totalUnits: number;
+  pricePerNight: number;
+  gallery?:
+    | {
+        image: number | Media;
+        id?: string | null;
+      }[]
+    | null;
+  features?: {
+    squareFeet?: number | null;
+    beds?: ('1' | '2' | '3' | 'king' | 'queen') | null;
+    guests?: number | null;
+  };
+  /**
+   * Select all that apply to this room
+   */
+  amenities?:
+    | (
+        | 'wifi'
+        | 'ac'
+        | 'minibar'
+        | 'room-service'
+        | 'balcony'
+        | 'ocean-view'
+        | 'king-bed'
+        | 'bathtub'
+        | 'safe'
+        | 'coffee'
+        | 'tv'
+        | 'desk'
+      )[]
+    | null;
+  availability?: ('available' | 'limited' | 'sold-out') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs".
+ */
+export interface Faq {
+  id: number;
+  question: string;
+  answer: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "bookings".
  */
 export interface Booking {
   id: number;
+  bookingId: string;
+  /**
+   * The type of room booked by the guest
+   */
   room: number | Room;
+  /**
+   * Select specific room number for this booking
+   */
+  assignedRoomNumber?: string | null;
+  /**
+   * The room number for this completed booking
+   */
+  completedRoomNumber?: string | null;
   checkIn: string;
   checkOut: string;
   guests: number;
@@ -1194,7 +1302,9 @@ export interface Booking {
   lastName: string;
   email: string;
   phone?: string | null;
-  status?: ('pending' | 'confirmed' | 'cancelled') | null;
+  status: 'pending' | 'confirmed' | 'checked-in' | 'checked-out' | 'cancelled';
+  actualCheckInTime?: string | null;
+  actualCheckOutTime?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1265,10 +1375,19 @@ export interface Search {
   id: number;
   title?: string | null;
   priority?: number | null;
-  doc: {
-    relationTo: 'blogs';
-    value: number | Blog;
-  };
+  doc:
+    | {
+        relationTo: 'blogs';
+        value: number | Blog;
+      }
+    | {
+        relationTo: 'bookings';
+        value: number | Booking;
+      }
+    | {
+        relationTo: 'rooms';
+        value: number | Room;
+      };
   slug?: string | null;
   meta?: {
     title?: string | null;
@@ -1404,10 +1523,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'blogs';
         value: number | Blog;
-      } | null)
-    | ({
-        relationTo: 'amenities';
-        value: number | Amenity;
       } | null)
     | ({
         relationTo: 'rooms';
@@ -1583,39 +1698,17 @@ export interface PagesSelect<T extends boolean = true> {
             };
         hero5?: T | Hero5PropsSelect<T>;
         aboutMission?: T | AboutMissionPropsSelect<T>;
-        accommodationsBlock?:
-          | T
-          | {
-              eyebrow?: T;
-              heading?: T;
-              description?: T;
-              accommodations?:
-                | T
-                | {
-                    room?: T;
-                    customImage?: T;
-                    id?: T;
-                  };
-              cta?:
-                | T
-                | {
-                    text?: T;
-                    link?: T;
-                  };
-              id?: T;
-              blockName?: T;
-            };
-        faqAccordion?:
-          | T
-          | {
-              image?: T;
-              faqs?: T;
-              id?: T;
-              blockName?: T;
-            };
-        roomsCollectionBlock?: T | RoomsCollectionPropsSelect<T>;
-        roomsGridBlock?: T | RoomsGridPropsSelect<T>;
+        faqAccordion?: T | FaAccordionPropSelect<T>;
         aboutSection?: T | AboutSectionPropsSelect<T>;
+        featuredRooms?:
+          | T
+          | {
+              id?: T;
+              blockName?: T;
+            };
+        amenitiesCarousel?: T | AmenitiesCarouselBlockSelect<T>;
+        aboutUs?: T | AboutUsBlockPropSelect<T>;
+        businessMap?: T | BusinessMapPropSelect<T>;
       };
   meta?:
     | T
@@ -1839,29 +1932,17 @@ export interface AboutMissionPropsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "RoomsCollectionProps_select".
+ * via the `definition` "FaAccordionProp_select".
  */
-export interface RoomsCollectionPropsSelect<T extends boolean = true> {
-  eyebrow?: T;
-  heading?: T;
-  displayType?: T;
-  selectedRooms?: T;
-  limit?: T;
-  layout?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "RoomsGridProps_select".
- */
-export interface RoomsGridPropsSelect<T extends boolean = true> {
-  heading?: T;
-  description?: T;
-  displayType?: T;
-  roomCategory?: T;
-  selectedRooms?: T;
-  columns?: T;
+export interface FaAccordionPropSelect<T extends boolean = true> {
+  image?: T;
+  faqs?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
   id?: T;
   blockName?: T;
 }
@@ -1876,6 +1957,49 @@ export interface AboutSectionPropsSelect<T extends boolean = true> {
   sectionSubtitle?: T;
   highlightedStatement?: T;
   mainContent?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "AmenitiesCarouselBlock_select".
+ */
+export interface AmenitiesCarouselBlockSelect<T extends boolean = true> {
+  title?: T;
+  subtitle?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "AboutUsBlockProp_select".
+ */
+export interface AboutUsBlockPropSelect<T extends boolean = true> {
+  preTitle?: T;
+  title?: T;
+  subtitle?: T;
+  imageMain?: T;
+  imageFloating?: T;
+  body?: T;
+  philosophyTitle?: T;
+  philosophyText?: T;
+  gallery?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  closingText?: T;
+  ctaText?: T;
+  ctaLink?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "BusinessMapProp_select".
+ */
+export interface BusinessMapPropSelect<T extends boolean = true> {
   id?: T;
   blockName?: T;
 }
@@ -2040,25 +2164,28 @@ export interface BlogsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "amenities_select".
- */
-export interface AmenitiesSelect<T extends boolean = true> {
-  name?: T;
-  icon?: T;
-  description?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "rooms_select".
  */
 export interface RoomsSelect<T extends boolean = true> {
   name?: T;
+  description?: T;
   slug?: T;
   type?: T;
+  roomNumberRange?:
+    | T
+    | {
+        startNumber?: T;
+        endNumber?: T;
+        prefix?: T;
+      };
+  roomNumbers?:
+    | T
+    | {
+        number?: T;
+        id?: T;
+      };
   featured?: T;
-  description?: T;
+  totalUnits?: T;
   pricePerNight?: T;
   gallery?:
     | T
@@ -2073,12 +2200,7 @@ export interface RoomsSelect<T extends boolean = true> {
         beds?: T;
         guests?: T;
       };
-  amenities?:
-    | T
-    | {
-        amenity?: T;
-        id?: T;
-      };
+  amenities?: T;
   availability?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2098,7 +2220,10 @@ export interface FaqsSelect<T extends boolean = true> {
  * via the `definition` "bookings_select".
  */
 export interface BookingsSelect<T extends boolean = true> {
+  bookingId?: T;
   room?: T;
+  assignedRoomNumber?: T;
+  completedRoomNumber?: T;
   checkIn?: T;
   checkOut?: T;
   guests?: T;
@@ -2110,6 +2235,8 @@ export interface BookingsSelect<T extends boolean = true> {
   email?: T;
   phone?: T;
   status?: T;
+  actualCheckInTime?: T;
+  actualCheckOutTime?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2387,7 +2514,7 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  */
 export interface Header {
   id: number;
-  logo: number | Media;
+  logo?: (number | null) | Media;
   title?: string | null;
   navItems?:
     | {
@@ -2504,6 +2631,86 @@ export interface ContactInfo {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hotelAmenities".
+ */
+export interface HotelAmenity {
+  id: number;
+  amenities?:
+    | {
+        title: string;
+        description?: string | null;
+        /**
+         * Image of the amenity
+         */
+        image: number | Media;
+        link?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "businessLocation".
+ */
+export interface BusinessLocation {
+  id: number;
+  /**
+   * Business longitude coordinate
+   */
+  longitude: number;
+  /**
+   * Business latitude coordinate
+   */
+  latitude: number;
+  businessName: string;
+  address: string;
+  /**
+   * Format: +234 XXX XXX XXXX
+   */
+  phone: string;
+  /**
+   * Business email address
+   */
+  email?: string | null;
+  /**
+   * Business operating hours
+   */
+  hours: string;
+  /**
+   * Short business description for the map
+   */
+  description?: string | null;
+  /**
+   * Is the business currently open?
+   */
+  isOpen?: boolean | null;
+  /**
+   * Service area radius in kilometers (for map visualization)
+   */
+  serviceRadiusKm?: number | null;
+  /**
+   * Your Mapbox API access token
+   */
+  mapboxAccessToken: string;
+  /**
+   * Default map zoom level (1-20)
+   */
+  defaultZoom?: number | null;
+  /**
+   * Show service area circle on map
+   */
+  showServiceArea?: boolean | null;
+  /**
+   * Show business info card by default
+   */
+  showBusinessInfo?: boolean | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "header_select".
  */
 export interface HeaderSelect<T extends boolean = true> {
@@ -2595,6 +2802,47 @@ export interface ContactInfoSelect<T extends boolean = true> {
   emailResponseTime?: T;
   phoneAvailability?: T;
   officeVisitMessage?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hotelAmenities_select".
+ */
+export interface HotelAmenitiesSelect<T extends boolean = true> {
+  amenities?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+        link?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "businessLocation_select".
+ */
+export interface BusinessLocationSelect<T extends boolean = true> {
+  longitude?: T;
+  latitude?: T;
+  businessName?: T;
+  address?: T;
+  phone?: T;
+  email?: T;
+  hours?: T;
+  description?: T;
+  isOpen?: T;
+  serviceRadiusKm?: T;
+  mapboxAccessToken?: T;
+  defaultZoom?: T;
+  showServiceArea?: T;
+  showBusinessInfo?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

@@ -21,9 +21,24 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Bed, Users, Ruler, Star, CalendarIcon } from 'lucide-react'
+import { GalleryHorizontalIcon } from 'lucide-react'
 import { Room } from '@/payload-types'
+import { X } from 'lucide-react'
+import Masonry, { ResponsiveMasonry } from 'react-responsive-masonry'
+import { useEffect } from 'react'
+import { RoomAmenities } from '@/components/Room/amenities'
+import { Breadcrumbs } from '@/components/Room/BreadCrumbs'
+import { WhatsAppInquiryButton } from '@/components/Room/WhatsappInquiryButton'
+import { LocationSection } from '@/components/Room/LocationSection'
+import { BusinessLocation } from '@/payload-types'
+import { LocationMap } from '@/components/Map'
 
-export function RoomClientPage({ room }: { room: Room }) {
+interface RoomClientPageProps {
+  room: Room
+  businessLocation: BusinessLocation
+}
+
+export function RoomClientPage({ room, businessLocation }: RoomClientPageProps) {
   // Booking state
   const [checkIn, setCheckIn] = useState<Date | undefined>()
   const [checkOut, setCheckOut] = useState<Date | undefined>()
@@ -34,6 +49,24 @@ export function RoomClientPage({ room }: { room: Room }) {
   const [showBookingForm, setShowBookingForm] = useState(false)
   const [showInquiryDialog, setShowInquiryDialog] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false)
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null)
+  const [checkingAvailability, setCheckingAvailability] = useState(false)
+
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1024,
+  )
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Then use: numberOfMonths={windowWidth >= 640 ? 2 : 1}
+  const openLightbox = (index: number) => setSelectedImageIndex(index)
+  const closeLightbox = () => setSelectedImageIndex(null)
 
   // Derived values
   const hasValidDates = checkIn && checkOut && checkOut > checkIn
@@ -42,6 +75,8 @@ export function RoomClientPage({ room }: { room: Room }) {
 
   const images = room.gallery || []
   const hasMultipleImages = images.length > 1
+  const hasImages = images.length > 0
+  const showGalleryIcon = images.length > 1
 
   // Handlers
   const handleBooking = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -65,6 +100,7 @@ export function RoomClientPage({ room }: { room: Room }) {
         lastName: formData.get('lastName'),
         email: formData.get('email'),
         phone: formData.get('phone') || undefined,
+        status: 'confirmed',
       }
 
       const res = await fetch('/api/bookings', {
@@ -78,6 +114,9 @@ export function RoomClientPage({ room }: { room: Room }) {
           description: 'We’ve sent you a confirmation email.',
         })
         setShowBookingForm(false)
+        setCheckIn(undefined)
+        setCheckOut(undefined)
+        setGuests(2)
       } else {
         throw new Error('Booking failed')
       }
@@ -116,42 +155,233 @@ export function RoomClientPage({ room }: { room: Room }) {
     <>
       <div className="min-h-screen bg-background pb-24 lg:pb-8">
         {/* Hero Gallery */}
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 pt-4 lg:pt-8">
-          {images.length === 1 ? (
-            <div className="relative aspect-video lg:aspect-[16/9] rounded-2xl overflow-hidden shadow-2xl">
-              {typeof images[0].image === 'object' && (
-                <Media resource={images[0].image} fill imgClassName="object-cover" priority />
-              )}
-            </div>
-          ) : (
-            <div className={`grid grid-cols-1 ${hasMultipleImages ? 'lg:grid-cols-2' : ''} gap-4`}>
-              <div className="relative aspect-video lg:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
+        <div className="max-w-7xl mx-auto mt-8 px-4 lg:px-8 pt-4 lg:pt-8">
+          <div className="py-8">
+            <Breadcrumbs
+              items={[
+                { label: 'Rooms & Suites', href: '/rooms' },
+                { label: room.name, href: `/rooms/${room.slug}` },
+              ]}
+            />
+          </div>
+          {hasImages ? (
+            <div className="relative">
+              {/* Desktop: 1, 2, or 3 images with smart layout */}
+              <div
+                className="hidden lg:grid gap-4 cursor-pointer rounded-3xl overflow-hidden"
+                style={{
+                  gridTemplateColumns: images.length === 3 ? '2fr 1fr' : '1fr 1fr',
+                  gridTemplateRows: images.length === 3 ? '1fr 1fr' : '1fr',
+                  height: images.length === 1 ? '640px' : '560px',
+                }}
+                onClick={() => setIsGalleryOpen(true)}
+              >
+                {/* First image */}
+                <div
+                  className={`relative overflow-hidden rounded-3xl shadow-2xl ${
+                    images.length === 1
+                      ? 'col-span-2 row-span-2'
+                      : images.length === 3
+                        ? 'row-span-2'
+                        : ''
+                  }`}
+                >
+                  {typeof images[0].image === 'object' && (
+                    <Media resource={images[0].image} fill imgClassName="object-cover" priority />
+                  )}
+                </div>
+
+                {/* Second image (only if 2 or 3) */}
+                {images.length >= 2 && (
+                  <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+                    {typeof images[1].image === 'object' && (
+                      <Media resource={images[1].image} fill imgClassName="object-cover" />
+                    )}
+                  </div>
+                )}
+
+                {/* Third image (only if 3) */}
+                {images.length === 3 && (
+                  <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+                    {typeof images[2].image === 'object' && (
+                      <Media resource={images[2].image} fill imgClassName="object-cover" />
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile: Only first image + gallery icon */}
+              <div
+                className="lg:hidden relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl cursor-pointer"
+                onClick={() => setIsGalleryOpen(true)}
+              >
                 {typeof images[0].image === 'object' && (
                   <Media resource={images[0].image} fill imgClassName="object-cover" priority />
                 )}
               </div>
-              {hasMultipleImages && (
-                <div className="grid grid-cols-2 gap-4">
-                  {images.slice(1, 5).map((item, i) =>
-                    typeof item.image === 'object' ? (
-                      <div
-                        key={i}
-                        className="relative aspect-square rounded-xl overflow-hidden shadow-lg"
-                      >
-                        <Media resource={item.image} fill imgClassName="object-cover" />
-                        {i === 3 && images.length > 5 && (
-                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                            <p className="text-white text-2xl font-bold">+{images.length - 5}</p>
-                          </div>
-                        )}
-                      </div>
-                    ) : null,
-                  )}
+
+              {/* Gallery Icon + Count (bottom right) */}
+              {showGalleryIcon && (
+                <div
+                  className="absolute bottom-6 right-6 bg-white/95 backdrop-blur-md rounded-full px-5 py-3 shadow-2xl flex items-center gap-3 cursor-pointer hover:bg-white transition-all"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsGalleryOpen(true)
+                  }}
+                >
+                  <GalleryHorizontalIcon className="w-6 h-6 text-black" />
+                  <span className="font-medium text-black">
+                    {images.length} {images.length === 1 ? 'photo' : 'photos'}
+                  </span>
+                </div>
+              )}
+
+              {/* "More" overlay on last visible image (if >3) */}
+              {images.length > 3 && (
+                <div className="hidden lg:block absolute inset-0 bg-black/40 flex items-center justify-center rounded-3xl">
+                  <Badge className="text-3xl font-bold bg-white/90 text-black px-8 py-4">
+                    +{images.length - 3} more
+                  </Badge>
                 </div>
               )}
             </div>
+          ) : (
+            <div className="bg-gray-200 border-2 border-dashed rounded-3xl w-full h-96" />
           )}
         </div>
+        {/* ==== GALLERY MODAL (white, masonry) ==== */}
+        {isGalleryOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/70 z-[100]"
+              onClick={() => setIsGalleryOpen(false)}
+            />
+
+            {/* Gallery Modal */}
+            <div className="fixed inset-0 z-[101] flex flex-col bg-white">
+              {/* Top Bar */}
+              <div className="fixed top-0 left-0 right-0 h-24 bg-white/95 backdrop-blur-xl border-b z-10 flex items-center justify-between px-8">
+                <div>
+                  <h2 className="text-4xl font-light tracking-tight">Gallery • {room.name}</h2>
+                  <p className="text-muted-foreground text-lg">{images.length} photos</p>
+                </div>
+                <button
+                  onClick={() => setIsGalleryOpen(false)}
+                  className="bg-white hover:bg-gray-100 rounded-full p-4 shadow-xl transition-all"
+                >
+                  <X className="w-8 h-8" />
+                </button>
+              </div>
+
+              {/* Masonry */}
+              <div className="flex-1 pt-24 overflow-y-auto">
+                <div className="px-6 pb-12">
+                  <ResponsiveMasonry
+                    columnsCountBreakPoints={{ 350: 1, 750: 2, 1024: 3, 1440: 4, 1920: 5 }}
+                  >
+                    <Masonry gutter="20px">
+                      {images.map((item: any, index: number) => (
+                        <div
+                          key={index}
+                          onClick={() => openLightbox(index)}
+                          className="mb-5 cursor-zoom-in overflow-hidden hover:opacity-90 transition-opacity duration-300"
+                        >
+                          {typeof item.image === 'object' && (
+                            <Media
+                              resource={item.image}
+                              imgClassName="w-full h-auto object-cover block"
+                              priority={index < 8}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </Masonry>
+                  </ResponsiveMasonry>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ==== LIGHTBOX (black, full-screen image) – ALWAYS ON TOP ==== */}
+        {selectedImageIndex !== null && (
+          <>
+            {/* Darker, stronger backdrop */}
+            <div className="fixed inset-0 bg-black/98 z-[200]" onClick={closeLightbox} />
+
+            {/* Lightbox Modal – higher z-index than gallery */}
+            <div className="fixed inset-0 z-[200] flex flex-col bg-black">
+              {/* Close */}
+              <button
+                onClick={closeLightbox}
+                className="absolute top-8 right-8 z-50 bg-white/90 hover:bg-white rounded-full p-4 shadow-2xl transition-all"
+              >
+                <X className="w-8 h-8" />
+              </button>
+
+              {/* Prev / Next */}
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={() =>
+                      setSelectedImageIndex((i) => (i! - 1 + images.length) % images.length)
+                    }
+                    className="absolute left-8 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white rounded-full p-5 shadow-2xl transition-all"
+                  >
+                    <svg
+                      className="w-10 h-10"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setSelectedImageIndex((i) => (i! + 1) % images.length)}
+                    className="absolute right-8 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white rounded-full p-5 shadow-2xl transition-all"
+                  >
+                    <svg
+                      className="w-10 h-10"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                </>
+              )}
+
+              {/* Image */}
+              <div className="relative flex-1 flex items-center  px-32">
+                {typeof images[selectedImageIndex]?.image === 'object' && (
+                  <Media
+                    resource={images[selectedImageIndex].image}
+                    className="block max-w-full max-h-full object-contain shadow-2xl"
+                    imgClassName="object-contain"
+                  />
+                )}
+              </div>
+
+              {/* Counter */}
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-black/70 text-white px-8 py-4 rounded-full text-xl font-medium">
+                {selectedImageIndex + 1} / {images.length}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-12 lg:py-16">
@@ -198,49 +428,33 @@ export function RoomClientPage({ room }: { room: Room }) {
               </section>
 
               <Separator />
-
+              {/* amenities */}
               <section>
-                <h2 className="text-2xl font-semibold mb-8">Check Availability</h2>
-                <div className="flex">
-                  <Calendar
-                    mode="range"
-                    selected={{ from: checkIn, to: checkOut }}
-                    onSelect={(range: any) => {
-                      setCheckIn(range?.from)
-                      setCheckOut(range?.to)
-                      // if (range?.from && range?.to) {
-                      //   setShowDatePicker(false)
-                      //   toast.success('Dates selected!')
-                      // }
-                    }}
-                    disabled={(date) => date < new Date()}
-                    numberOfMonths={2} // or 2 if you want side-by-side
-                    className="rounded-2xl "
-                    classNames={{
-                      // Big, clean, luxury feel
-                      caption_label: 'text-2xl font-bold text-gray-900',
-                      nav_button: 'h-10 w-10 bg-gray-100 hover:bg-red-100 rounded-xl',
-                      day: 'h-12 w-12 text-lg font-medium rounded-xl hover:bg-red-50 hover:text-red-700 transition-all',
-                      day_selected: 'bg-red-700 text-white font-bold text-xl hover:bg-red-800',
-                      day_today: 'bg-gray-100 font-bold',
-                      day_range_start: 'bg-red-700 text-white rounded-l-xl',
-                      day_range_end: 'bg-red-700 text-white rounded-r-xl',
-                      day_range_middle: 'bg-red-100 text-red-900',
-                      months: 'flex flex-row gap-8',
-                    }}
-                  />
-                </div>
+                <h2 className="text-2xl font-semibold mb-8">Room Amenities</h2>
+                <RoomAmenities amenities={room.amenities || []} />
               </section>
+              <Separator />
+              {businessLocation && (
+                <section className="py-16">
+                  <div className="container mx-auto px-4">
+                    <h2 className="text-3xl font-bold mb-8">How to Find Us</h2>
+                    <LocationMap businessLocation={businessLocation} />
+                  </div>
+                </section>
+              )}
             </div>
 
             {/* Desktop Sticky Booking Card */}
             <div className="hidden lg:block">
-              <Card className="sticky top-24 shadow-2xl rounded-3xl overflow-hidden border">
-                <div className="p-8 space-y-6">
+              <Card className="sticky top-24 shadow-2xl rounded-3xl overflow-hidden border bg-white/95 backdrop-blur-xl">
+                <div className="p-7 space-y-6">
+                  {/* Price + Rating */}
                   <div className="flex items-baseline justify-between">
-                    <div>
-                      <span className="text-4xl font-bold">${room.pricePerNight}</span>
-                      <span className="text-muted-foreground ml-2">/ night</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-bold tracking-tight">
+                        ${room.pricePerNight}
+                      </span>
+                      <span className="text-muted-foreground text-lg">/ night</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
@@ -248,149 +462,292 @@ export function RoomClientPage({ room }: { room: Room }) {
                     </div>
                   </div>
 
-                  <p className="text-sm text-muted-foreground text-center -mt-4">
-                    Select dates and number of guests to see the total price per night
-                  </p>
-
-                  {/* Date & Guest Row */}
+                  {/* Date + Guests – Full-width pills */}
                   <div className="grid grid-cols-2 gap-4">
                     <Button
                       variant="outline"
-                      className="h-14 justify-start text-left font-normal border-2"
+                      className="h-14 rounded-full border-2 justify-start text-left font-medium text-sm"
                       onClick={() => setShowDatePicker(true)}
                     >
-                      <CalendarIcon className="mr-3 h-5 w-5 text-red-700" />
+                      <CalendarIcon className="w-5 h-5 mr-3 text-primary" />
                       {hasValidDates ? (
-                        <span>
-                          {format(checkIn!, 'MMM d')} – {format(checkOut!, 'MMM d')}
+                        <span className="truncate">
+                          {format(checkIn!, 'MMM d')} → {format(checkOut!, 'MMM d')}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground">Select Dates</span>
+                        <span className="text-muted-foreground">Dates</span>
                       )}
                     </Button>
 
-                    <Button variant="outline" className="h-14 border-2">
-                      <Users className="mr-3 h-5 w-5 text-red-700" />
-                      <span>{guests}</span>
+                    <Button variant="outline" className="h-14 rounded-full border-2 font-medium">
+                      <Users className="w-5 h-5 mr-3 text-primary" />
+                      {guests} {guests === 1 ? 'Guest' : 'Guests'}
                     </Button>
                   </div>
 
+                  {/* Tiny hint */}
                   {!hasValidDates && (
-                    <p className="text-sm text-primary text-center font-medium">
-                      Select dates to continue
+                    <p className="text-xs text-center text-muted-foreground -mt-2">
+                      Tap Dates to begin
                     </p>
                   )}
 
-                  <div className="space-y-3">
+                  {/* Action Buttons – Full-width, rounded, luxurious */}
+                  <div className="flex flex-col items-center space-y-3 pt-2">
+                    {/* Book Now – Primary Red */}
                     <Button
                       onClick={() => setShowBookingForm(true)}
-                      disabled={!hasValidDates}
+                      disabled={!hasValidDates || isAvailable === false}
                       size="lg"
-                      className="w-full bg-primary hover:bg-secondary text-white h-14 text-lg font-medium"
+                      className={`
+               w-full h-14 rounded-full font-semibold text-white text-lg transition-all shadow-lg
+            ${
+              hasValidDates && isAvailable !== false
+                ? 'bg-primary hover:bg-secondary'
+                : 'bg-gray-300 cursor-not-allowed'
+            }
+          `}
                     >
-                      Book now
+                      {hasValidDates ? 'Book Now' : 'Select Dates to Book'}
                     </Button>
 
-                    <Button
-                      onClick={() => setShowInquiryDialog(true)}
-                      variant="outline"
-                      size="lg"
-                      className="w-full h-14 text-lg"
-                    >
-                      Send Inquiry
-                    </Button>
+                    {/* WhatsApp – Green, luxurious */}
+                    <WhatsAppInquiryButton
+                      room={room}
+                      checkIn={checkIn}
+                      checkOut={checkOut}
+                      guests={guests}
+                    />
                   </div>
+
+                  {/* Optional: Tiny availability hint */}
+                  {isAvailable === false && hasValidDates && (
+                    <p className="text-center text-sm text-red-700 font-medium">
+                      Not available on selected dates
+                    </p>
+                  )}
                 </div>
               </Card>
             </div>
           </div>
         </div>
 
-        {/* Mobile Bottom Bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-2xl lg:hidden z-50">
-          <div className="p-4 space-y-3">
-            <p className="text-xs text-center text-muted-foreground">
-              Select dates and number of guests to see the total price per night
-            </p>
-
-            <div className="grid grid-cols-2 gap-3">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-100 shadow-2xl lg:hidden z-50">
+          <div className="px-3 py-3 safe-area-inset-bottom">
+            {/* Single row – smart responsive layout */}
+            <div className="flex items-center gap-2">
+              {/* 1. Dates – takes as much space as possible */}
               <Button
                 variant="outline"
-                className="h-12 border-2"
+                className="flex-1 min-w-0 h-14 rounded-full border-2 font-medium text-sm"
                 onClick={() => setShowDatePicker(true)}
               >
-                <CalendarIcon className="mr-2 h-5 w-5 text-red-700" />
-                {hasValidDates ? 'Dates selected' : 'Select Dates'}
+                <CalendarIcon className="w-5 h-5 mr-2 text-primary flex-shrink-0" />
+                <span className="truncate">
+                  {hasValidDates
+                    ? `${format(checkIn!, 'MMM d')} → ${format(checkOut!, 'MMM d')}`
+                    : 'Dates'}
+                </span>
               </Button>
 
-              <Button variant="outline" className="h-12 border-2">
-                <Users className="mr-2 h-5 w-5 text-red-700" />
-                {guests}
+              {/* 2. Guests – only shows when screen is wide enough */}
+              <Button
+                variant="outline"
+                className="hidden xs:flex h-14 w-20 rounded-full border-2 font-medium flex-shrink-0"
+              >
+                <Users className="w-5 h-5 text-primary" />
+                <span className="ml-1">{guests}</span>
               </Button>
-            </div>
 
-            {!hasValidDates && (
-              <p className="text-xs text-primary text-center">Select dates to continue</p>
-            )}
+              {/* 3. WhatsApp – ALWAYS visible, highest priority after Book */}
+              <WhatsAppInquiryButton
+                room={room}
+                checkIn={checkIn}
+                checkOut={checkOut}
+                guests={guests}
+              />
 
-            <div className="flex gap-3">
+              {/* 4. Book – ALWAYS visible, most important */}
               <Button
                 onClick={() => setShowBookingForm(true)}
                 disabled={!hasValidDates}
-                className="flex-1 bg-primary hover:bg-secondary h-12"
+                className={`
+          h-14 px-6 rounded-full font-bold text-white shadow-lg flex-shrink-0 transition-all
+          ${hasValidDates ? 'bg-primary hover:bg-secondary' : 'bg-gray-300'}
+        `}
               >
-                Book now
-              </Button>
-              <Button
-                onClick={() => setShowInquiryDialog(true)}
-                variant="outline"
-                className="flex-1 h-12"
-              >
-                Send Inquiry
+                {hasValidDates ? 'Book' : 'Dates'}
               </Button>
             </div>
+
+            {/* Tiny hint */}
+            {!hasValidDates && (
+              <p className="text-xs text-center text-muted-foreground mt-2">Tap Dates to book</p>
+            )}
           </div>
         </div>
 
-        {/* Date Picker Dialog */}
-        <Dialog open={showDatePicker} onOpenChange={setShowDatePicker}>
-          <DialogContent
-            className="max-w-2xl w-full p-0 bg-transparent border-0 shadow-none"
-            onOpenAutoFocus={(e) => e.preventDefault()} // stops scroll jump
-          >
-            {/* Remove header completely */}
-            <div className="flex justify-center items-center min-h-screen p-4">
-              <div className="bg-white rounded-3xl shadow-2xl border-2 border-gray-100 p-8 max-w-fit">
-                <Calendar
-                  mode="range"
-                  selected={{ from: checkIn, to: checkOut }}
-                  onSelect={(range: any) => {
-                    setCheckIn(range?.from)
-                    setCheckOut(range?.to)
-                    // if (range?.from && range?.to) {
-                    //   setShowDatePicker(false)
-                    //   toast.success('Dates selected!')
-                    // }
-                  }}
-                  disabled={(date) => date < new Date()}
-                  numberOfMonths={1} // or 2 if you want side-by-side
-                  className="rounded-2xl"
-                  classNames={{
-                    // Big, clean, luxury feel
-                    caption_label: 'text-2xl font-bold text-gray-900',
-                    nav_button: 'h-10 w-10 bg-gray-100 hover:bg-red-100 rounded-xl',
-                    day: 'h-12 w-12 text-lg font-medium rounded-xl hover:bg-red-50 hover:text-red-700 transition-all',
-                    day_selected: 'bg-red-700 text-white font-bold text-xl hover:bg-red-800',
-                    day_today: 'bg-gray-100 font-bold',
-                    day_range_start: 'bg-red-700 text-white rounded-l-xl',
-                    day_range_end: 'bg-red-700 text-white rounded-r-xl',
-                    day_range_middle: 'bg-red-100 text-red-900',
-                  }}
-                />
+        {showDatePicker && (
+          <>
+            {/* Backdrop */}
+            <div className="fixed inset-0 bg-black/70 z-[100]" />
+
+            {/* Scrollable Modal Container */}
+            <div className="fixed inset-0 z-[101] flex items-start justify-center overflow-y-auto py-8 px-4">
+              <div className="bg-white rounded-3xl shadow-3xl border-2 border-gray-100 w-full max-w-6xl mx-auto my-8">
+                {/* Header – Sticky */}
+                <div className="sticky top-0 bg-white rounded-t-3xl border-b z-10 px-10 ">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-4xl lg:text-5xl font-light tracking-tight">
+                        Select Your Dates
+                      </h2>
+                      <p className="text-lg text-muted-foreground mt-4">
+                        {checkIn && checkOut && checkOut > checkIn ? (
+                          <span className="font-medium">
+                            {format(checkIn, 'EEEE, MMMM d')} → {format(checkOut, 'EEEE, MMMM d')}{' '}
+                            <span className="text-primary">
+                              ({differenceInDays(checkOut, checkIn)} night
+                              {differenceInDays(checkOut, checkIn) !== 1 ? 's' : ''})
+                            </span>
+                          </span>
+                        ) : (
+                          'Choose your check-in and check-out dates'
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Close button – only when valid */}
+
+                    <button
+                      onClick={() => setShowDatePicker(false)}
+                      className="bg-gray-100 hover:bg-gray-200 rounded-full p-4 transition-all mt-2"
+                    >
+                      <X className="w-8 h-8" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Scrollable Content */}
+                <div className="px-10 pb-12">
+                  {/* Calendar – centered */}
+                  <div className="flex justify-center my-12">
+                    <Calendar
+                      mode="range"
+                      selected={{ from: checkIn, to: checkOut }}
+                      onSelect={async (range: any) => {
+                        const from = range?.from
+                        const to = range?.to
+
+                        setCheckIn(from)
+                        setCheckOut(to)
+
+                        if (from && to && to > from) {
+                          // Automatically check availability
+                          setCheckingAvailability(true)
+                          setIsAvailable(null)
+
+                          try {
+                            const res = await fetch('/api/check-availability', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                roomId: room.id,
+                                checkIn: from.toISOString(),
+                                checkOut: to.toISOString(),
+                              }),
+                            })
+
+                            const data = await res.json()
+                            setIsAvailable(data.available)
+
+                            toast[data.available ? 'success' : 'error'](
+                              data.available ? 'Room is available!' : 'Room is not available',
+                              {
+                                description: `${format(from, 'MMM d')} → ${format(to, 'MMM d')}`,
+                              },
+                            )
+
+                            setShowDatePicker(false)
+                          } catch (err) {
+                            toast.error('Failed to check availability')
+                          } finally {
+                            setCheckingAvailability(false)
+                          }
+                        }
+                      }}
+                      disabled={(date) => date < new Date()}
+                      numberOfMonths={2}
+                      className="rounded-2xl"
+                      classNames={{
+                        caption_label: 'text-2xl font-bold text-gray-900',
+                        nav_button: 'h-12 w-12 bg-gray-100 hover:bg-red-100 rounded-xl text-lg',
+                        day: 'h-14 w-14 text-lg font-medium rounded-xl hover:bg-red-50 hover:text-red-700 transition-all',
+                        day_selected: 'bg-red-700 text-white font-bold text-xl hover:bg-red-800',
+                        day_today: 'bg-gray-100 font-bold ring-2 ring-red-700',
+                        day_range_start: 'bg-red-700 text-white rounded-l-xl',
+                        day_range_end: 'bg-red-700 text-white rounded-r-xl',
+                        day_range_middle: 'bg-red-100 text-red-900',
+                        months:
+                          window.innerWidth >= 640
+                            ? 'flex flex-row gap-8 sm:gap-12'
+                            : 'flex flex-col',
+                      }}
+                    />
+                  </div>
+
+                  {/* Bottom Instruction / Confirm */}
+                  {/* <div className="text-center pb-8">
+                    {checkIn && checkOut && checkOut > checkIn ? (
+                      <div className="space-y-8">
+                        <p className="text-2xl font-medium text-green-700">Valid stay confirmed</p>
+                        <Button
+                          size="lg"
+                          className="bg-red-700 hover:bg-red-800 text-white px-20 h-16 text-xl font-medium rounded-full shadow-2xl"
+                          onClick={() => setShowDatePicker(false)}
+                        >
+                          Confirm & Continue
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="max-w-2xl mx-auto">
+                        <p className="text-xl text-muted-foreground leading-relaxed">
+                          Please select a <span className="font-bold text-red-700">check-in</span>{' '}
+                          and a <span className="font-bold text-red-700">check-out</span> date at
+                          least <span className="font-bold underline">one night apart</span>
+                        </p>
+                      </div>
+                    )}
+                  </div> */}
+                </div>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          </>
+        )}
+        {/* checking availabiity of room  */}
+        {checkingAvailability && (
+          <div className="fixed inset-0 z-[201] flex items-center justify-center bg-white/90 backdrop-blur-md">
+            <div className="bg-white rounded-3xl shadow-3xl p-12 flex flex-col items-center gap-8 border border-gray-100">
+              <div className="relative">
+                <div className="w-20 h-20 border-8 border-gray-100 rounded-full" />
+                <div className="absolute inset-0 w-20 h-20 border-8 border-red-700 border-t-transparent rounded-full animate-spin" />
+              </div>
+              <div className="text-center space-y-3">
+                <p className="text-3xl font-light tracking-tight text-gray-900">
+                  Checking Availability
+                </p>
+                <p className="text-lg text-muted-foreground">
+                  One moment while we confirm your perfect stay...
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-3 h-3 bg-red-700 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <div className="w-3 h-3 bg-red-700 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <div className="w-3 h-3 bg-red-700 rounded-full animate-bounce" />
+              </div>
+            </div>
+          </div>
+        )}
         {/* Final Booking Form */}
         <Dialog open={showBookingForm} onOpenChange={setShowBookingForm}>
           <DialogContent className="max-w-lg">

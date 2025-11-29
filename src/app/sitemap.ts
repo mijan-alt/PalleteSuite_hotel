@@ -8,9 +8,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const payload = await getPayload({ config })
   const SITE_URL = normalizeUrl(
     process.env.NEXT_PUBLIC_SERVER_URL ||
-      (process.env.VERCEL_PROJECT_PRODUCTION_URL 
-        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` 
-        : 'https://webdesigngrid.com')
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : 'https://webdesigngrid.com'),
   )
 
   try {
@@ -53,25 +53,49 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
     })
 
+    // ADD THIS: Fetch rooms (right after blogs)
+    const rooms = await payload.find({
+      collection: 'rooms',
+      overrideAccess: false,
+      draft: false,
+      depth: 0,
+      limit: 1000,
+      pagination: false,
+      select: {
+        slug: true,
+        updatedAt: true,
+      },
+    })
+
+    // ADD THIS: Build room entries
+    const roomEntries: MetadataRoute.Sitemap = rooms.docs
+      .filter((room) => room?.slug)
+      .map((room) => ({
+        url: `${SITE_URL}/rooms/${room.slug}`,
+        lastModified: room.updatedAt ? new Date(room.updatedAt) : new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.9, // Higher than blogs! These are money pages
+      }))
+
     console.log(`Generating sitemap with ${pages.docs.length} pages and ${blogs.docs.length} blogs`)
 
     // Helper to construct full path from breadcrumbs
     const getFullPath = (page: any): string => {
       if (page.slug === 'home') return '/'
-      
+
       // If breadcrumbs exist, use the last one's URL
       if (page.breadcrumbs && page.breadcrumbs.length > 0) {
         const lastBreadcrumb = page.breadcrumbs[page.breadcrumbs.length - 1]
         return lastBreadcrumb.url || `/${page.slug}`
       }
-      
+
       return `/${page.slug}`
     }
 
     // Build page entries
     const pageEntries: MetadataRoute.Sitemap = pages.docs
-      .filter(page => page?.slug)
-      .map(page => {
+      .filter((page) => page?.slug)
+      .map((page) => {
         const pageUrl = getFullPath(page)
 
         return {
@@ -84,8 +108,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Build blog entries
     const blogEntries: MetadataRoute.Sitemap = blogs.docs
-      .filter(blog => blog?.slug)
-      .map(blog => {
+      .filter((blog) => blog?.slug)
+      .map((blog) => {
         return {
           url: `${SITE_URL}/blogs/${blog.slug}`,
           lastModified: blog.updatedAt ? new Date(blog.updatedAt) : new Date(),
@@ -110,13 +134,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
     ]
 
-    const allEntries = [...pageEntries, ...blogEntries, ...staticEntries]
+    const allEntries = [...pageEntries, ...blogEntries, ...roomEntries, ...staticEntries]
     console.log(`Generated ${allEntries.length} sitemap entries`)
 
     return allEntries
   } catch (error) {
     console.error('Sitemap generation error:', error)
-    
+
     // Return minimal sitemap on error
     return [
       {
@@ -130,5 +154,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 }
 
 // Force static generation at build time
-export const dynamic = 'force-static'
-export const revalidate = 3600 // Revalidate every hour
+// export const dynamic = 'force-static'
+// export const revalidate = 3600

@@ -14,9 +14,7 @@ import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { revalidateDelete, revalidatePage } from './hooks/revalidatePage'
 import { CTA2 } from '@/blocks/cta/config'
 import { RoomsCollectionBlock } from '@/blocks/RoomCollection/config'
-import { RoomsGridBlock } from '@/blocks/RoomGrid/config'
 import { revalidatePath } from 'next/cache'
-
 
 import {
   MetaDescriptionField,
@@ -31,15 +29,12 @@ import { ServicesBlock } from '@/blocks/Service/config'
 import { Cta3Block } from '@/blocks/Cta3/config'
 import { Hero5 } from '@/blocks/Hero5/config'
 import { AboutMissionBlock } from '@/blocks/AboutMission/config'
-import { AccommodationsBlock } from '@/blocks/Accomodation/config'
 import FaqAccordion from '@/blocks/Faq/config'
-
-
 import { AboutSection } from '@/blocks/AboutSection/config'
-
-
-
-
+import { FeaturedRoomsBlock } from '@/blocks/FeaturedRooms/config'
+import { AmenitiesCarousel } from '@/blocks/AmenitesCarousel/config'
+import { AboutUs } from '@/blocks/AboutUs/config'
+import { BusinessMap } from '@/blocks/BusinessMap/config'
 
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
@@ -110,12 +105,13 @@ export const Pages: CollectionConfig<'pages'> = {
                 Cta3Block,
                 Hero5,
                 AboutMissionBlock,
-                AccommodationsBlock,
                 FaqAccordion,
-                RoomsCollectionBlock,
-                RoomsGridBlock,
-                AboutSection
-                
+                AboutSection,
+                FeaturedRoomsBlock,
+                AmenitiesCarousel,
+                AboutUs,
+                BusinessMap
+              
               ],
               admin: {
                 initCollapsed: true,

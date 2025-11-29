@@ -1,0 +1,255 @@
+'use client'
+import React from 'react'
+import { Gutter } from '@payloadcms/ui'
+import Link from 'next/link'
+import { useAuth } from '@payloadcms/ui'
+
+const CustomDashboard = () => {
+  const { user } = useAuth()
+
+  return (
+    <Gutter className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="mb-10">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h1 className="text-4xl font-bold text-foreground mb-2">
+              Palette Suite Administration
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              Welcome back, {user?.name?.split(' ')[0] || 'Administrator'}
+            </p>
+          </div>
+          <div className="flex items-center px-6 py-3 bg-success/10 border border-success/20 rounded-xl">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-success rounded-full animate-pulse"></div>
+              <span className="text-sm font-medium text-success">All systems operational</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-10">
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-8">
+          <div className="group relative bg-card rounded-xl border border-border p-8 hover:border-primary/30 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-primary/10 rounded-xl">
+                  <span className="text-2xl">👤</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Today's Arrivals</p>
+                  <p className="text-3xl font-bold text-foreground">3</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">Guests scheduled to check in</p>
+            </div>
+          </div>
+
+          <div className="group relative bg-card rounded-xl border border-border p-8 hover:border-warning/30 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-warning/10 rounded-xl">
+                  <span className="text-2xl">⏳</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Pending Actions</p>
+                  <p className="text-3xl font-bold text-foreground">7</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">Bookings requiring confirmation</p>
+            </div>
+          </div>
+
+          <div className="group relative bg-card rounded-xl border border-border p-8 hover:border-success/30 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-success/10 rounded-xl">
+                  <span className="text-2xl">🛏️</span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Occupancy</p>
+                  <div className="flex items-baseline gap-4">
+                    <span className="text-3xl font-bold text-foreground">5/8</span>
+                    <span className="text-lg font-semibold text-success">63%</span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">Suites currently occupied</p>
+            </div>
+          </div>
+
+          <div className="group relative bg-card rounded-xl border border-border p-8 hover:border-primary/30 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-primary/10 rounded-xl">
+                  <span className="text-2xl">₦</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Today's Revenue</p>
+                  <p className="text-3xl font-bold text-foreground">2,850,000</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">Total revenue generated today</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          {/* Actions Panel */}
+          <div className="bg-card rounded-xl border border-border p-8">
+            <h2 className="text-2xl font-bold text-foreground mb-8">Immediate Actions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Link
+                href="/admin/collections/bookings/create"
+                className="group relative flex items-center gap-4 p-6 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all duration-300 shadow-sm hover:shadow-md"
+              >
+                <div className="p-3 bg-primary-foreground/20 rounded-xl">
+                  <span className="text-xl">📅</span>
+                </div>
+                <span className="font-medium">Create New Booking</span>
+              </Link>
+
+              <Link
+                href="/admin/collections/bookings?where[status][equals]=pending"
+                className="group relative flex items-center justify-between p-6 bg-warning text-foreground rounded-xl hover:bg-warning/90 transition-all duration-300 shadow-sm hover:shadow-md"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-foreground/20 rounded-xl">
+                    <span className="text-xl">⚠️</span>
+                  </div>
+                  <span className="font-medium">Review Pending Bookings</span>
+                </div>
+                <div className="flex items-center justify-center min-w-[28px] h-7 bg-foreground/20 rounded-full text-sm font-semibold">
+                  7
+                </div>
+              </Link>
+
+              <Link
+                href="/admin/collections/rooms"
+                className="group flex items-center gap-4 p-6 bg-success text-primary-foreground rounded-xl hover:bg-success/90 transition-all duration-300 shadow-sm hover:shadow-md"
+              >
+                <div className="p-3 bg-primary-foreground/20 rounded-xl">
+                  <span className="text-xl">🛏️</span>
+                </div>
+                <span className="font-medium">Manage Suite Status</span>
+              </Link>
+
+              <Link
+                href="/admin/collections/inquiries"
+                className="group flex items-center gap-4 p-6 bg-muted text-foreground rounded-xl hover:bg-muted/80 transition-all duration-300 shadow-sm hover:shadow-md"
+              >
+                <div className="p-3 bg-foreground/20 rounded-xl">
+                  <span className="text-xl">💬</span>
+                </div>
+                <span className="font-medium">Respond to Inquiries</span>
+                <div className="ml-auto flex items-center justify-center min-w-[28px] h-7 bg-foreground/20 rounded-full text-sm font-semibold">
+                  4
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* Suite Status Panel */}
+          <div className="bg-card rounded-xl border border-border p-8">
+            <h2 className="text-2xl font-bold text-foreground mb-6">Suite Status Overview</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-5 bg-destructive/5 border border-destructive/20 rounded-xl">
+                <div>
+                  <div className="font-semibold text-foreground">Suite 101</div>
+                  <div className="text-sm text-muted-foreground">Mr. Adebayo</div>
+                </div>
+                <div className="text-right">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-destructive/10 text-destructive text-sm font-medium rounded-full border border-destructive/20">
+                    <div className="w-2.5 h-2.5 bg-destructive rounded-full"></div>
+                    Occupied
+                  </div>
+                  <div className="text-sm text-destructive mt-1">Departs: Tomorrow</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-5 bg-success/5 border border-success/20 rounded-xl">
+                <div>
+                  <div className="font-semibold text-foreground">Suite 102</div>
+                  <div className="text-sm text-muted-foreground">Ms. Okafor</div>
+                </div>
+                <div className="text-right">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-success/10 text-success text-sm font-medium rounded-full border border-success/20">
+                    <div className="w-2.5 h-2.5 bg-success rounded-full"></div>
+                    Occupied
+                  </div>
+                  <div className="text-sm text-success mt-1">Departs: Nov 29</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-5 bg-muted/50 border border-border rounded-xl">
+                <div className="font-semibold text-foreground">Suite 103</div>
+                <div className="text-right">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-muted text-muted-foreground text-sm font-medium rounded-full border border-border">
+                    <div className="w-2.5 h-2.5 bg-muted-foreground rounded-full"></div>
+                    Available
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-5 bg-warning/5 border border-warning/20 rounded-xl">
+                <div className="font-semibold text-foreground">Suite 104</div>
+                <div className="text-right">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-warning/10 text-warning text-sm font-medium rounded-full border border-warning/20">
+                    <div className="w-2.5 h-2.5 bg-warning rounded-full"></div>
+                    Cleaning
+                  </div>
+                  <div className="text-sm text-warning mt-1">Ready by 14:00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="bg-card rounded-xl border border-border p-8">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold text-foreground">Recent Activity</h2>
+            <Link
+              href="/admin/activity-log"
+              className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              View Full Log
+            </Link>
+          </div>
+          <div className="space-y-4">
+            {[
+              {
+                time: '08:45',
+                description: 'Mr. Adebayo checked into Pearl Sanctuary',
+                type: 'Check-in',
+              },
+              { time: '08:12', description: 'New inquiry from Mrs. Okafor', type: 'Inquiry' },
+              { time: '07:30', description: 'Suite 7 housekeeping completed', type: 'Maintenance' },
+              { time: '07:15', description: 'New booking: Suite 105 for Dec 1-5', type: 'Booking' },
+              { time: '06:45', description: 'System backup completed', type: 'System' },
+            ].map((activity, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-4 p-4 rounded-xl hover:bg-accent transition-colors"
+              >
+                <div className="flex-shrink-0 w-12 text-sm font-mono text-muted-foreground">
+                  {activity.time}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground">{activity.description}</p>
+                </div>
+                <div className="flex-shrink-0 px-3 py-1 text-xs font-medium rounded-full bg-muted text-muted-foreground">
+                  {activity.type}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Gutter>
+  )
+}
+
+export default CustomDashboard

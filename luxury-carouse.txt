@@ -1,0 +1,178 @@
+// src/payload/blocks/LuxuryHeroCarousel.ts
+import  { Block } from 'payload';
+
+export const LuxuryHeroCarousel: Block = {
+  slug: 'luxuryHeroCarousel',
+  interfaceName: 'LuxuryHeroCarouselProp',
+  labels: {
+    singular: 'Luxury Hero Carousel',
+    plural: 'Luxury Hero Carousels',
+  },
+  imageURL: '/images/blocks/luxury-hero-carousel.jpg', // optional preview in admin
+  fields: [
+    {
+      name: 'slides',
+      type: 'array',
+      minRows: 3,
+      maxRows: 10,
+      labels: {
+        singular: 'Slide',
+        plural: 'Slides',
+      },
+      fields: [
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',          // uses Payload's Media collection
+          required: true,
+          admin: {
+            description: 'High-resolution image (ideally 2560×1440 or larger)',
+          },
+        },
+
+        {
+          name: 'heading',
+          type: 'text',
+          required: true,
+          defaultValue: 'Timeless Elegance Awaits',
+          admin: {
+            placeholder: 'e.g. An Oasis of Tranquility',
+          },
+        },
+        {
+          name: 'subheading',
+          type: 'text',
+          required: true,
+          defaultValue: 'Experience unrivalled luxury in the heart of the city',
+          admin: {
+            placeholder: 'Supporting tagline',
+          },
+        },
+        {
+          name: 'ctaText',
+          type: 'text',
+          defaultValue: 'Book Your Stay',
+        },
+        {
+          name: 'ctaLink',
+          type: 'text',
+          required: true,
+          admin: {
+            placeholder: 'e.g. /rooms, /offers, https://...',
+          },
+        },
+      ],
+    },
+  ],
+};
+
+
+
+
+// src/components/blocks/LuxuryHeroCarousel.tsx
+'use client'
+
+import * as React from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel'
+import { Button } from '@/components/ui/button'
+import Autoplay from 'embla-carousel-autoplay'
+import { ArrowRight } from 'lucide-react'
+import { LuxuryHeroCarouselProp } from '@/payload-types'
+import { Media } from '@/components/Media'
+// Payload auto-generates this type – adjust path if needed
+
+export const LuxuryHeroCarousel: React.FC<LuxuryHeroCarouselProp> = (props) => {
+  const plugin = React.useRef(
+    Autoplay({
+      delay: 3000, // ~8.5 seconds – luxurious slow pace
+      stopOnInteraction: false,
+      stopOnMouseEnter: true,
+    }),
+  )
+
+  const { slides } = props
+
+  return (
+    <section className="relative w-full overflow-hidden">
+      <Carousel
+        plugins={[plugin.current]}
+        className="w-full"
+        opts={{
+          align: 'center',
+          loop: true,
+        }}
+        onMouseEnter={() => plugin.current.stop()}
+        onMouseLeave={() => plugin.current.reset()}
+      >
+        <CarouselContent className="-ml-0">
+          {slides?.map((slide) => {
+            // Resolve the media object correctly
+            const image = typeof slide.image === 'object' ? slide.image : null
+
+            return (
+              <CarouselItem key={slide.id} className="pl-0">
+                <div
+                  className="relative h-screen min-h-[680px] flex items-center justify-end
+                 pl-4 md:pl-6 lg:pl-8 basis-[90%] md:basis-[75%] lg:basis-[65%]
+                "
+                >
+                  {/* Background Image */}
+                  {image && (
+                    <>
+                      <Media resource={image} fill priority imgClassName="object-cover" />
+                      <div className="absolute inset-0 bg-black/50" />
+                    </>
+                  )}
+
+                  {/* Text Content */}
+                  <div className="relative z-10 max-w-7xl mx-auto px-8 lg:px-16 text-right text-white">
+                    <div className="max-w-3xl ml-auto">
+                      <h1 className="text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-tight">
+                        {slide.heading}
+                      </h1>
+                      <p className="mt-6 text-lg md:text-xl font-light opacity-90 leading-relaxed">
+                        {slide.subheading}
+                      </p>
+
+                      <div className="mt-12">
+                        <Button
+                          asChild
+                          size="lg"
+                          className="rounded-full bg-white text-black hover:bg-gray-100 group font-medium px-10 py-6 text-lg"
+                        >
+                          <Link href={slide.ctaLink}>
+                            {slide.ctaText}
+                            <ArrowRight className="ml-3 size-6 -rotate-45 transition-all group-hover:rotate-0 group-hover:ml-6" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CarouselItem>
+            )
+          })}
+        </CarouselContent>
+      </Carousel>
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3">
+        {slides?.map((_, index) => (
+          <button
+            key={index}
+            className="group"
+            onClick={() => {
+              // Optional: jump to slide
+            }}
+          >
+            <span className="block h-2 w-2 md:h-2.5 md:w-2.5 rounded-full bg-white/50 transition-all data-[active]:bg-white data-[active]:w-8 md:data-[active]:w-12" />
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+export default LuxuryHeroCarousel
+
+

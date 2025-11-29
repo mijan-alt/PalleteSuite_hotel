@@ -76,10 +76,10 @@ export const HighImpactHero = (props: HeroProps) => {
           <Button
             asChild
             size="lg"
-            className="group absolute bottom-0 left-0 -mb-6 lg:-mb-0 lg:bottom-3 bg-primary hover:bg-secondary  text-white rounded-full px-8"
+            className="group absolute bottom-6 sm:bottom-0 left-0 -mb-6 lg:-mb-0 lg:bottom-3 bg-primary hover:bg-secondary  text-white rounded-full px-8"
           >
-            <Link href="/appointment">
-              Book Appointment{' '}
+            <Link href="/rooms">
+              Explore{' '}
               <ArrowRight className="ml-2 size-4 -rotate-45 transition-transform group-hover:rotate-0" />
             </Link>
           </Button>

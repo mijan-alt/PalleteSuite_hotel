@@ -1,8 +1,9 @@
-// blocks/EventAccordion.ts
+
 import { Block } from 'payload'
 
 const FaqAccordion: Block = {
   slug: 'faqAccordion',
+  interfaceName: 'FaAccordionProp',
   labels: {
     singular: 'FAQ Accordion with Image',
     plural: 'FAQ Accordions with Image',
@@ -17,15 +18,25 @@ const FaqAccordion: Block = {
     },
     {
       name: 'faqs',
-      type: 'relationship',
-      relationTo: 'faqs',
-      hasMany: true,
-      required: true,
+      type: 'array',
+      label: 'FAQ Items',
       minRows: 3,
       maxRows: 12,
-      admin: {
-        description: 'Select the FAQ items to display.',
-      },
+      required: true,
+      fields: [
+        {
+          name: 'question',
+          type: 'text',
+          required: true,
+          label: 'Question',
+        },
+        {
+          name: 'answer',
+          type: 'richText',
+          required: true,
+          label: 'Answer',
+        },
+      ],
     },
   ],
 }

@@ -1,18 +1,39 @@
-
+// src/collections/Rooms.ts
 import type { CollectionConfig } from 'payload'
-import { revalidatePath } from 'next/cache'
-import { revalidateTag } from 'next/cache'
+import { revalidateTag, revalidatePath } from 'next/cache'
 
-export const Rooms: CollectionConfig<'rooms'> = {
+const formatSlug = (value: string): string =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+
+const amenityOptions = [
+  { label: 'Wi-Fi', value: 'wifi' },
+  { label: 'Air Conditioning', value: 'ac' },
+  { label: 'Mini Bar', value: 'minibar' },
+  { label: 'Room Service', value: 'room-service' },
+  { label: 'Balcony', value: 'balcony' },
+  { label: 'Ocean View', value: 'ocean-view' },
+  { label: 'King Bed', value: 'king-bed' },
+  { label: 'Bathtub', value: 'bathtub' },
+  { label: 'Safe', value: 'safe' },
+  { label: 'Coffee Maker', value: 'coffee' },
+  { label: 'TV', value: 'tv' },
+  { label: 'Work Desk', value: 'desk' },
+]
+
+export const Rooms: CollectionConfig = {
   slug: 'rooms',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'type', 'pricePerNight', 'featured', 'slug'],
+    defaultColumns: ['name', 'type', 'totalUnits', 'pricePerNight', 'featured'],
   },
   access: {
     read: () => true,
   },
-
   fields: [
     {
       name: 'name',
@@ -21,12 +42,20 @@ export const Rooms: CollectionConfig<'rooms'> = {
       label: 'Room Name',
     },
     {
+      name: 'description',
+      type: 'textarea',
+      required: true,
+    },
+    {
       name: 'slug',
       type: 'text',
       required: true,
       unique: true,
+      index: true,
       admin: {
         position: 'sidebar',
+        readOnly: true,
+        description: 'Auto-generated from name',
       },
     },
     {
@@ -43,31 +72,94 @@ export const Rooms: CollectionConfig<'rooms'> = {
         { label: 'Federal Grand Suite', value: 'federal-grand' },
       ],
     },
+
+    // Option 1: Auto-generate range
+    {
+      name: 'roomNumberRange',
+      type: 'group',
+      fields: [
+        {
+          name: 'startNumber',
+          type: 'number',
+          label: 'Starting Room Number',
+          min: 100,
+        },
+        {
+          name: 'endNumber',
+          type: 'number',
+          label: 'Ending Room Number',
+          min: 100,
+        },
+        {
+          name: 'prefix',
+          type: 'text',
+          label: 'Room Number Prefix (optional)',
+          admin: {
+            placeholder: 'e.g., A, B, Pearl-',
+          },
+        },
+      ],
+      admin: {
+        description:
+          'Generate sequential room numbers (e.g., 101-112). Leave blank to manually add room numbers below.',
+      },
+    },
+
+    // Option 2: Manually add room numbers
+    {
+      name: 'roomNumbers',
+      type: 'array',
+      minRows: 1,
+      fields: [
+        {
+          name: 'number',
+          type: 'text',
+          required: true,
+          label: 'Room Number',
+          admin: {
+            placeholder: 'e.g., 101, 201A, Pearl Suite',
+          },
+        },
+    
+      ],
+      admin: {
+        description:
+          'Individual room numbers. Generated automatically if you use the range above, or add manually.',
+      },
+    },
+
     {
       name: 'featured',
       type: 'checkbox',
-      label: 'Featured Room',
       defaultValue: false,
+      admin: { position: 'sidebar' },
+    },
+
+    {
+      name: 'totalUnits',
+      type: 'number',
+      required: true,
+      min: 1,
+      defaultValue: 1,
       admin: {
+        description: 'Total rooms of this type (auto-calculated from room numbers)',
         position: 'sidebar',
+        readOnly: true,
       },
     },
-    {
-      name: 'description',
-      type: 'textarea',
-      required: true,
-    },
+
     {
       name: 'pricePerNight',
       type: 'number',
       required: true,
       min: 0,
-      label: 'Price Per Night ($)',
+      admin: { step: 100 },
     },
     {
       name: 'gallery',
       type: 'array',
-      label: 'Room Images',
+      minRows: 1,
+      maxRows: 12,
       fields: [
         {
           name: 'image',
@@ -76,18 +168,12 @@ export const Rooms: CollectionConfig<'rooms'> = {
           required: true,
         },
       ],
-      required:true
     },
     {
       name: 'features',
       type: 'group',
-      label: 'Room Features',
       fields: [
-        {
-          name: 'squareFeet',
-          type: 'number',
-          label: 'Square Feet',
-        },
+        { name: 'squareFeet', type: 'number', label: 'Size (sq ft)' },
         {
           name: 'beds',
           type: 'select',
@@ -107,77 +193,89 @@ export const Rooms: CollectionConfig<'rooms'> = {
         },
       ],
     },
+
     {
       name: 'amenities',
-      type: 'array',
+      type: 'select',
       label: 'Amenities',
-      fields: [
-        {
-          name: 'amenity',
-          type: 'relationship',
-          relationTo: 'amenities',
-        },
-      ],
+      hasMany: true,
+      options: amenityOptions,
+      admin: {
+        description: 'Select all that apply to this room',
+        isClearable: true,
+      },
     },
+
     {
       name: 'availability',
       type: 'select',
+      defaultValue: 'available',
       options: [
         { label: 'Available', value: 'available' },
         { label: 'Limited', value: 'limited' },
         { label: 'Sold Out', value: 'sold-out' },
       ],
-      defaultValue: 'available',
-      admin: {
-        position: 'sidebar',
-      },
+      admin: { position: 'sidebar' },
     },
   ],
 
   hooks: {
-    afterChange: [
-      async ({ doc, operation, req }) => {
-        // Only run on server (not in admin preview)
-        if (typeof window !== 'undefined') return doc
-
-        const slug = doc.slug as string
-
-        try {
-          // 1. Revalidate the individual room page
-          revalidatePath(`/rooms/${slug}`, 'page')
-
-          // 2. Revalidate any listing pages (e.g. /rooms, /accommodation, homepage if featured)
-          revalidatePath('/rooms')
-          revalidatePath('/')
-
-          // 3. Revalidate using cache tags (recommended for dynamic routes)
-          revalidateTag(`room-${slug}`)
-        
-      
-
-          console.log(`Revalidated room: /rooms/${slug}`)
-        } catch (error) {
-          console.error('Revalidation failed:', error)
+    beforeChange: [
+      async ({ data, operation }) => {
+        // Generate slug from name
+        if (data?.name && !data?.slug) {
+          data.slug = formatSlug(data.name)
         }
 
+        // Generate room numbers from range if provided
+        if (
+          data?.roomNumberRange?.startNumber &&
+          data?.roomNumberRange?.endNumber &&
+          data.roomNumberRange.startNumber <= data.roomNumberRange.endNumber
+        ) {
+          const roomNumbers: Array<{ number: string; floor?: number; status?: string }> = []
+          const prefix = data.roomNumberRange.prefix || ''
+          const start = data.roomNumberRange.startNumber
+          const end = data.roomNumberRange.endNumber
+
+          for (let i = start; i <= end; i++) {
+            const roomNumber = prefix + i.toString()
+            // Calculate floor from room number (e.g., 101 = floor 1, 201 = floor 2)
+            const floor = Math.floor(i / 100)
+            
+            roomNumbers.push({
+              number: roomNumber,
+              floor: floor > 0 ? floor : undefined,
+            })
+          }
+
+          data.roomNumbers = roomNumbers
+          console.log(`Generated ${roomNumbers.length} room numbers`)
+        }
+
+        // Calculate totalUnits from roomNumbers
+        if (data?.roomNumbers && Array.isArray(data.roomNumbers)) {
+          data.totalUnits = data.roomNumbers.length
+          console.log(`Total units set to: ${data.totalUnits}`)
+        }
+
+        return data
+      },
+    ],
+    afterChange: [
+      async ({ doc }) => {
+        if (typeof window !== 'undefined') return doc
+        revalidateTag('rooms')
+        revalidateTag(`room-${doc.slug}`)
+        revalidatePath(`/rooms/${doc.slug}`)
         return doc
       },
     ],
-
-    // Optional: Revalidate on delete
     afterDelete: [
       async ({ doc }) => {
-        if (typeof window !== 'undefined') return
-
-        const slug = doc.slug as string
-
-        revalidatePath(`/rooms/${slug}`)
-        revalidatePath('/rooms')
-        revalidatePath('/')
-        revalidateTag(`room-${slug}`)
         revalidateTag('rooms')
-
-        console.log(`Room deleted & cache cleared: ${slug}`)
+        revalidateTag(`room-${doc.slug}`)
+        revalidatePath(`/rooms/${doc.slug}`)
       },
     ],
   },

@@ -9,22 +9,22 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Maximize2, Bed, Users } from 'lucide-react'
 import { Media } from '@/components/Media'
 
-// Fetch all rooms
-const fetchAllRooms = async () => {
-  const payload = await getPayload({ config: configPromise })
-
-  const rooms = await payload.find({
-    collection: 'rooms',
-    limit: 100,
-    depth: 2,
-    sort: '-featured',
-  })
-
-  return rooms.docs
-}
-
-// Cached getter
-const getAllRooms = async () => unstable_cache(fetchAllRooms, ['all-rooms'], { tags: ['rooms'] })()
+const getAllRooms = unstable_cache(
+  async () => {
+    const payload = await getPayload({ config: configPromise })
+    const rooms = await payload.find({
+      collection: 'rooms',
+      limit: 100,
+      depth: 2,
+    })
+    return rooms.docs
+  },
+  ['all-rooms'],
+  {
+    tags: ['rooms'],
+    revalidate: 600, // optional: revalidate every 10 minutes
+  },
+)
 
 export default async function RoomsPage() {
   const rooms = await getAllRooms()

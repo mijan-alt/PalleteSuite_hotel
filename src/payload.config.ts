@@ -22,23 +22,30 @@ import { ContactInfo } from './globals/ContactInfo'
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import nodemailer from 'nodemailer'
 import { s3Storage } from '@payloadcms/storage-s3'
-import { Amenities } from './collections/Amenities'
 import { Rooms } from './collections/Rooms'
 import { Faqs } from './collections/Faq'
 import { Bookings } from './collections/Bookings'
 import { Inquiries } from './collections/Inquiries'
+import { HotelAmenities } from './globals/HotelAmenities'
+import { BusinessLocation } from './globals/BusinessLocation'
+
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+console.log('dirname payload.config.ts', dirname)
+console.log('main directory', path.resolve(dirname, 'components/admin/CustomDashboard'))
 
 export default buildConfig({
   admin: {
     components: {
-      // The `BeforeLogin` component renders a message that you see while logging into your admin panel.
-      // Feel free to delete this at any time. Simply remove the line below.
-      beforeLogin: ['@/components/BeforeLogin'],
-      // The `BeforeDashboard` component renders the 'welcome' block that you see after logging into your admin panel.
-      // Feel free to delete this at any time. Simply remove the line below.
-      beforeDashboard: ['@/components/BeforeDashboard'],
+      beforeDashboard: ['./components/admin/Hello'],
+      graphics:{
+        Logo: './components/admin/CustomLogo',
+      },
+      views: {
+        dashboard: {
+          Component: './components/admin/CustomDashboard',
+        },
+      },
     },
     importMap: {
       baseDir: path.resolve(dirname),
@@ -74,24 +81,21 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || '',
     },
   }),
-  collections: [Pages, 
-    Media,
-     Categories, 
-     Users, Blogs, Amenities, Rooms, Faqs, Bookings, Inquiries ],
+  collections: [Pages, Media, Categories, Users, Blogs, Rooms, Faqs, Bookings, Inquiries],
+
   cors: [getServerSideURL()].filter(Boolean),
-  globals: [Header, Footer, ContactInfo],
+  globals: [Header, Footer, ContactInfo, HotelAmenities, BusinessLocation],
   plugins: [
     ...plugins,
     s3Storage({
       collections: {
-       media: {
-        //  disableLocalStorage: true,// Recommended for production
-       prefix:'media',
-       generateFileURL: ({filename, prefix}) =>
-        // Use the public URL directly and append the prefix/filename
-        `${process.env.R2_PUBLIC_URL}/${prefix}/${filename}`,
-       },
-        
+        media: {
+          //  disableLocalStorage: true,// Recommended for production
+          prefix: 'media',
+          generateFileURL: ({ filename, prefix }) =>
+            // Use the public URL directly and append the prefix/filename
+            `${process.env.R2_PUBLIC_URL}/${prefix}/${filename}`,
+        },
       },
       bucket: process.env.S3_BUCKET!,
       config: {
@@ -101,11 +105,9 @@ export default buildConfig({
         },
         region: 'auto',
         endpoint: process.env.S3_API || '',
-        forcePathStyle:true
-    
+        forcePathStyle: true,
       },
     }),
-  
   ],
   secret: process.env.PAYLOAD_SECRET,
   sharp,
@@ -139,8 +141,6 @@ export default buildConfig({
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-     debug: true, // ✅ See what's happening
-     logger: true, // ✅ Enable logging
     },
   }),
 })

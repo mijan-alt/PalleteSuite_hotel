@@ -15,16 +15,21 @@ import { Page, Blog } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
 
 const generateTitle: GenerateTitle<Blog | Page> = ({ doc }) => {
-  return doc?.title ? `${doc.title} | Payload Website Template` : 'Payload Website Template'
+  return doc?.title ? `${doc.title} | Pallete Suite` : 'Pallete Suite hotels'
 }
 
-const generateURL: GenerateURL<any> = ({ doc }) => {
+const generateURL: GenerateURL<any> = ({ doc, collectionSlug }) => {
   const url = getServerSideURL()
 
   // If no document, return base URL
   if (!doc) return url
 
-  // Use breadcrumbs to construct the complete path for any nesting level
+  // Handle blogs collection specifically
+  if (collectionSlug === 'blogs') {
+    return doc.slug ? `${url}/blogs/${doc.slug}` : url
+  }
+
+  // Use breadcrumbs to construct the complete path for any nesting level (pages)
   if (doc?.breadcrumbs && Array.isArray(doc.breadcrumbs) && doc.breadcrumbs.length > 0) {
     // The breadcrumbs array contains the complete hierarchy from root to current page
     // For example: [{url: '/services'}, {url: '/services/web'}, {url: '/services/web/design'}]
@@ -111,7 +116,7 @@ export const plugins: Plugin[] = [
   }),
 
   searchPlugin({
-    collections: ['blogs'],
+    collections: ['blogs', 'bookings', 'rooms'],
     beforeSync: beforeSyncWithSearch,
     searchOverrides: {
       fields: ({ defaultFields }) => {

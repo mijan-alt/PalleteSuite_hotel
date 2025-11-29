@@ -1,93 +1,59 @@
-import type { ArchiveBlock as ArchiveBlockProps } from '@/payload-types'
+// src/blocks/ArchiveBlock/Component.tsx
+import { ArchiveBlock as ArchiveBlockProps } from '@/payload-types'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
-import React from 'react'
 import { BlogArchive } from '@/components/BlogsArchive'
-import { Blog } from '@/payload-types'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
-export const ArchiveBlock: React.FC<
-  ArchiveBlockProps & {
-    id?: string
-  }
-> = async (props) => {
-  const { id, categories, introContent, limit: limitFromProps, populateBy, selectedDocs } = props
 
-  const limit = limitFromProps || 3
+export const ArchiveBlock: React.FC<ArchiveBlockProps & { id?: string }> = async (props) => {
+  const { id, categories, limit: limitFromProps = 3, populateBy, selectedDocs } = props
 
-  let posts: Blog[] = []
+  let posts: any[] = []
 
   if (populateBy === 'collection') {
     const payload = await getPayload({ config: configPromise })
+    const flattenedCategories = categories?.map((c) => (typeof c === 'object' ? c.id : c))
 
-    const flattenedCategories = categories?.map((category) => {
-      if (typeof category === 'object') return category.id
-      else return category
-    })
-
-    const fetchedPosts = await payload.find({
+    const fetched = await payload.find({
       collection: 'blogs',
-      depth: 1,
-      limit,
-      ...(flattenedCategories && flattenedCategories.length > 0
-        ? {
-            where: {
-              categories: {
-                in: flattenedCategories,
-              },
-            },
-          }
-        : {}),
-    })
+      depth: 2,
 
-    posts = fetchedPosts.docs
+      where: flattenedCategories?.length ? { categories: { in: flattenedCategories } } : {},
+    })
+    posts = fetched.docs
   } else {
-    if (selectedDocs?.length) {
-      posts = selectedDocs.filter((p): p is Blog => typeof p === 'object')
-    }
+    posts = selectedDocs?.filter(Boolean) || []
   }
 
+  if (posts.length === 0) return null
+
   return (
-    <section className="py-16 sm:py-24" id={`block-${id}`}>
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-3xl text-center">
-          <Badge variant="secondary" className="mb-6">
-            Latest Updates
-          </Badge>
-          <h2 className="mb-3 text-3xl font-semibold text-pretty md:mb-4 md:text-5xl lg:mb-6">
-            Blog Posts
+    <section className="py-24 lg:py-32 overflow-hidden" id={id ? `block-${id}` : undefined}>
+      <div className="container mx-auto px-6 max-w-7xl">
+        {/* Elegant Header */}
+        <div className="text-center mb-20">
+          <p className="text-sm tracking-widest uppercase text-primary font-medium mb-4">Journal</p>
+          <h2 className="text-5xl md:text-6xl font-light tracking-tight text-gray-900">
+            Stories from Palette Suite
           </h2>
-          <p className="mb-12 text-muted-foreground md:text-base lg:text-lg">
-            Discover the latest trends, tips, and best practices in modern web development. From UI
-            components to design systems, stay updated with our expert insights.
+          <p className="mt-6 text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            Moments, musings, and behind-the-scenes from our sanctuary.
           </p>
         </div>
 
         <BlogArchive posts={posts} />
-      </div>
 
-      <div className="mt-16 text-center container">
-        <Link href={'/blogs'}>
-          <Button variant="outline" className="w-full sm:w-auto bg-primary text-white">
-            View all blogs
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="ml-2"
-            >
-              <path d="M5 12h14"></path>
-              <path d="m12 5 7 7-7 7"></path>
-            </svg>
-          </Button>
-        </Link>
+        {/* Subtle CTA */}
+        <div className="text-center mt-20">
+          <Link
+            href="/blogs"
+            className="inline-flex items-center text-gray-700 hover:text-primary transition-colors duration-300 text-lg font-medium"
+          >
+            Explore the Journal
+            <ArrowRight className="ml-3 w-5 h-5" />
+          </Link>
+        </div>
       </div>
     </section>
   )

@@ -13,7 +13,6 @@ import { LivePreviewListener } from '@/components/LivePreviewListener'
 import { AnyMxRecord } from 'node:dns'
 import { Pages } from '@/collections/Pages'
 
-
 const fetchPageBySlug = async (slugSegment: string, draft: boolean) => {
   const payload = await getPayload({ config: configPromise })
 
@@ -63,31 +62,46 @@ const fetchContactInfo = async () => {
   return contactInfo
 }
 
+const fetchHotelAmenities = async () => {
+  const payload = await getPayload({ config: configPromise })
+  return await payload.findGlobal({
+    slug: 'hotelAmenities',
+    depth: 2,
+  })
+}
 
-// ✅ NEW: Cached getter for contact info
+const fetchBusinessLocation = async () => {
+  const payload = await getPayload({ config: configPromise })
+  return await payload.findGlobal({
+    slug: 'businessLocation',
+  })
+}
+
+const getHotelAmenities = async () =>
+  unstable_cache(fetchHotelAmenities, ['hotel-amenities'], {
+    tags: ['hotel-amenities'],
+  })()
+
 const getContactInfo = async () =>
-  unstable_cache(
-    fetchContactInfo,
-    ['contact-info'],
-    {
-      tags: ['contact-info'],
-    },
-  )()
+  unstable_cache(fetchContactInfo, ['contact-info'], {
+    tags: ['contact-info'],
+  })()
+
+const getBusinessLocation = async () =>
+  unstable_cache(fetchBusinessLocation, ['business-location'], {
+    tags: ['business-location'],
+  })()
 
 // Cached getter - only caches in production (non-draft mode)
 const getPage = async (slugSegment: string, draft?: boolean) =>
   draft
     ? fetchPageBySlug(slugSegment, draft)
-    : unstable_cache(
-        async () => fetchPageBySlug(slugSegment, false),
-        [`page-${slugSegment}`],
-        {
-          tags: [`page-${slugSegment}`, 'pages'],
-        },
-      )()
+    : unstable_cache(async () => fetchPageBySlug(slugSegment, false), [`page-${slugSegment}`], {
+        tags: [`page-${slugSegment}`, 'pages'],
+      })()
 
 export async function generateStaticParams() {
-let pages:any = []
+  let pages: any = []
   try {
     const getPages = unstable_cache(fetchAllPages, ['pages'], {
       tags: ['pages'],
@@ -98,11 +112,10 @@ let pages:any = []
     return [] // Return empty to avoid build crash
   }
 
-
-  console.log("all pages", Pages)
+  console.log('all pages', Pages)
 
   return pages
-    .map((page:any) => {
+    .map((page: any) => {
       const breadcrumbUrl = page.breadcrumbs?.[page.breadcrumbs.length - 1]?.url
       if (breadcrumbUrl) {
         const segments = breadcrumbUrl.split('/').filter(Boolean)
@@ -128,8 +141,6 @@ type Args = {
   }>
 }
 
-
-
 export default async function Page({ params: paramsPromise }: Args) {
   const { slug = [] } = await paramsPromise
   const { isEnabled: draft } = await draftMode()
@@ -138,9 +149,12 @@ export default async function Page({ params: paramsPromise }: Args) {
   const lastSegment = slug[slug.length - 1] || 'home'
   const url = `/${slug.join('/')}`
 
-  const [page, contactInfo] = await Promise.all([
+  // Fetch all globals in parallel
+  const [page, contactInfo, hotelAmenities, businessLocation] = await Promise.all([
     getPage(lastSegment, draft),
-    getContactInfo(), 
+    getContactInfo(),
+    getHotelAmenities(),
+    getBusinessLocation(),
   ])
 
   if (!page) {
@@ -148,14 +162,20 @@ export default async function Page({ params: paramsPromise }: Args) {
   }
 
   const { hero, layout, breadcrumbs, title } = page
-  
 
   return (
     <article>
       <PayloadRedirects disableNotFound url={url} />
       {draft && <LivePreviewListener />}
       <RenderHero {...hero} breadcrumbs={breadcrumbs} currentPage={title} />
-      {layout && Array.isArray(layout) && <RenderBlocks blocks={layout} contactInfo={contactInfo}/>}
+      {layout && Array.isArray(layout) && (
+        <RenderBlocks 
+          blocks={layout} 
+          contactInfo={contactInfo} 
+          hotelAmenities={hotelAmenities}
+          businessLocation={businessLocation}
+        />
+      )}
     </article>
   )
 }

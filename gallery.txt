@@ -1,0 +1,359 @@
+// app/rooms/[slug]/client-page.tsx (only the gallery part replaced)
+
+'use client'
+
+import { useState } from 'react'
+import { Media } from '@/components/Media'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { Gallery } from 'lucide-react'
+import { Room } from '@/payload-types'
+
+// ... all your existing imports and logic remain unchanged ...
+
+export function RoomClientPage({ room }: { room: Room }) {
+  // ... all your existing state and handlers ...
+
+  const images = room.gallery || []
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false)
+
+  const hasImages = images.length > 0
+  const showGalleryIcon = images.length > 1
+
+  return (
+    <>
+      <div className="min-h-screen bg-background pb-24 lg:pb-8">
+        {/* ==== LUXURY GALLERY ==== */}
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 pt-4 lg:pt-8">
+          {hasImages ? (
+            <div className="relative">
+              {/* Desktop: 1, 2, or 3 images with smart layout */}
+              <div
+                className="hidden lg:grid gap-4 cursor-pointer rounded-3xl overflow-hidden"
+                style={{
+                  gridTemplateColumns: images.length === 3 ? '2fr 1fr' : '1fr 1fr',
+                  gridTemplateRows: images.length === 3 ? '1fr 1fr' : '1fr',
+                  height: images.length === 1 ? '640px' : '560px',
+                }}
+                onClick={() => setIsGalleryOpen(true)}
+              >
+                {/* First image */}
+                <div
+                  className={`relative overflow-hidden rounded-3xl shadow-2xl ${
+                    images.length === 1 ? 'col-span-2 row-span-2' : images.length === 3 ? 'row-span-2' : ''
+                  }`}
+                >
+                  {typeof images[0].image === 'object' && (
+                    <Media resource={images[0].image} fill imgClassName="object-cover" priority />
+                  )}
+                </div>
+
+                {/* Second image (only if 2 or 3) */}
+                {images.length >= 2 && (
+                  <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+                    {typeof images[1].image === 'object' && (
+                      <Media resource={images[1].image} fill imgClassName="object-cover" />
+                    )}
+                  </div>
+                )}
+
+                {/* Third image (only if 3) */}
+                {images.length === 3 && (
+                  <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+                    {typeof images[2].image === 'object' && (
+                      <Media resource={images[2].image} fill imgClassName="object-cover" />
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile: Only first image + gallery icon */}
+              <div
+                className="lg:hidden relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl cursor-pointer"
+                onClick={() => setIsGalleryOpen(true)}
+              >
+                {typeof images[0].image === 'object' && (
+                  <Media resource={images[0].image} fill imgClassName="object-cover" priority />
+                )}
+              </div>
+
+              {/* Gallery Icon + Count (bottom right) */}
+              {showGalleryIcon && (
+                <div
+                  className="absolute bottom-6 right-6 bg-white/95 backdrop-blur-md rounded-full px-5 py-3 shadow-2xl flex items-center gap-3 cursor-pointer hover:bg-white transition-all"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsGalleryOpen(true)
+                  }}
+                >
+                  <Gallery className="w-6 h-6 text-black" />
+                  <span className="font-medium text-black">
+                    {images.length} {images.length === 1 ? 'photo' : 'photos'}
+                  </span>
+                </div>
+              )}
+
+              {/* "More" overlay on last visible image (if >3) */}
+              {images.length > 3 && (
+                <div className="hidden lg:block absolute inset-0 bg-black/40 flex items-center justify-center rounded-3xl">
+                  <Badge className="text-3xl font-bold bg-white/90 text-black px-8 py-4">
+                    +{images.length - 3} more
+                  </Badge>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-gray-200 border-2 border-dashed rounded-3xl w-full h-96" />
+          )}
+        </div>
+
+        {/* ==== FULL GALLERY MODAL ==== */}
+        <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
+          <DialogContent className="max-w-6xl w-full h-[90vh] p-0 overflow-hidden bg-black">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 p-4 h-full overflow-y-auto">
+              {images.map((item, i) => (
+                <div
+                  key={i}
+                  className="relative aspect-square rounded-xl overflow-hidden cursor-zoom-in hover:opacity-90 transition-opacity"
+                >
+                  {typeof item.image === 'object' && (
+                    <Media
+                      resource={item.image}
+                      fill
+                      imgClassName="object-cover"
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ... rest of your existing content (booking, details, etc.) remains 100% unchanged ... */}
+        {/* Main Content, Booking Card, Mobile Bar, Dialogs — all untouched */}
+      </div>
+    </>
+  )
+}
+
+
+// Add these imports at the top of your file
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+} from '@/components/ui/dialog'
+import { X } from 'lucide-react'
+
+// Inside your component, replace the old modal with this:
+const [isGalleryOpen, setIsGalleryOpen] = useState(false)
+const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
+
+const openLightbox = (index: number) => setSelectedImageIndex(index)
+const closeLightbox = () => setSelectedImageIndex(null)
+
+// === MAIN GALLERY MODAL (90% screen, white, neat grid) ===
+<Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
+  <DialogContent className="max-w-[90vw] w-[90vw] h-[90vh] p-8 bg-white rounded-3xl shadow-3xl overflow-hidden">
+    {/* Close button */}
+    <button
+      onClick={() => setIsGalleryOpen(false)}
+      className="absolute top-6 right-6 z-50 bg-white/90 hover:bg-white rounded-full p-3 shadow-xl transition-all"
+    >
+      <X className="w-6 h-6" />
+    </button>
+
+    {/* Title */}
+    <DialogHeader className="mb-8 text-center">
+      <h2 className="text-3xl font-light tracking-tight">Gallery • {room.name}</h2>
+      <p className="text-muted-foreground">{images.length} photos</p>
+    </DialogHeader>
+
+    {/* Neat, full-size image grid */}
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 h-full overflow-y-auto pb-20">
+      {images.map((item, index) => (
+        <button
+          key={index}
+          onClick={() => openLightbox(index)}
+          className="group relative aspect-square rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[0.98]"
+        >
+          {typeof item.image === 'object' && (
+            <Media
+              resource={item.image}
+              fill
+              imgClassName="object-cover group-hover:scale-110 transition-transform duration-700"
+              sizes="(max-width: 768px) 45vw, (max-width: 1024px) 30vw, 20vw"
+            />
+          )}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+        </button>
+      ))}
+    </div>
+  </DialogContent>
+</Dialog>
+
+{/* === FULL-SCREEN LIGHTBOX (single image popup) === */}
+{selectedImageIndex !== null && (
+  <Dialog open={true} onOpenChange={closeLightbox}>
+    <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] p-0 bg-black rounded-none">
+      <button
+        onClick={closeLightbox}
+        className="absolute top-8 right-8 z-50 bg-white/90 hover:bg-white rounded-full p-4 shadow-2xl transition-all"
+      >
+        <X className="w-8 h-8" />
+      </button>
+
+      {/* Previous / Next arrows */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={() => setSelectedImageIndex((i) => (i! - 1 + images.length) % images.length)}
+            className="absolute left-8 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white rounded-full p-4 shadow-2xl transition-all"
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setSelectedImageIndex((i) => (i! + 1) % images.length)}
+            className="absolute right-8 top-1/2 -translate-y-1/2 z-50 bg-white/90 hover:bg-white rounded-full p-4 shadow-2xl transition-all"
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
+      )}
+
+      {/* Full-screen image */}
+      <div className="relative w-full h-full flex items-center justify-center">
+        {typeof images[selectedImageIndex]?.image === 'object' && (
+          <Media
+            resource={images[selectedImageIndex].image}
+            fill
+            imgClassName="object-contain"
+            priority
+          />
+        )}
+      </div>
+
+      {/* Image counter */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/70 text-white px-6 py-3 rounded-full text-lg font-medium">
+        {selectedImageIndex + 1} / {images.length}
+      </div>
+    </DialogContent>
+  </Dialog>
+)}
+
+
+
+// Add this import at the top
+import Masonry from 'react-masonry-css'
+
+// Replace your gallery modal with this:
+<Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
+  <DialogContent className="max-w-[90vw] w-[90vw] h-[90vh] p-8 bg-white overflow-hidden">
+    {/* Close button */}
+    <button
+      onClick={() => setIsGalleryOpen(false)}
+      className="absolute top-6 right-6 z-50 bg-white hover:bg-gray-100 rounded-full p-3 shadow-xl transition-all"
+    >
+      <X className="w-6 h-6" />
+    </button>
+
+    {/* Title */}
+    <div className="text-center mb-10">
+      <h2 className="text-4xl font-light tracking-tight">Gallery • {room.name}</h2>
+      <p className="text-muted-foreground mt-2">{images.length} photos</p>
+    </div>
+
+    {/* MASONRY GRID — NO border-radius, pure luxury */}
+    <div className="h-[calc(90vh-180px)] overflow-y-auto pr-4">
+      <Masonry
+        breakpointCols={{
+          default: 4,
+          1536: 4,
+          1280: 3,
+          1024: 3,
+          768: 2,
+          640: 2,
+        }}
+        className="flex -ml-4 w-auto"
+        columnClassName="pl-4 bg-clip-padding"
+      >
+        {images.map((item, index) => (
+          <div
+            key={index}
+            onClick={() => openLightbox(index)}
+            className="mb-4 cursor-zoom-in overflow-hidden hover:opacity-90 transition-opacity"
+          >
+            {typeof item.image === 'object' && (
+              <Media
+                resource={item.image}
+                width={800}
+                height={1200}
+                imgClassName="w-full h-auto object-cover"
+                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                priority={index < 6}
+              />
+            )}
+          </div>
+        ))}
+      </Masonry>
+    </div>
+  </DialogContent>
+</Dialog>
+
+
+
+import React from "react"
+import Masonry, { ResponsiveMasonry } from "react-responsive-masonry"
+
+// Inside your component (replace the old gallery modal)
+<Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
+  <DialogContent className="max-w-[90vw] w-[90vw] h-[90vh] p-8 bg-white overflow-hidden">
+    {/* Close button */}
+    <button
+      onClick={() => setIsGalleryOpen(false)}
+      className="absolute top-6 right-6 z-50 bg-white hover:bg-gray-100 rounded-full p-3 shadow-xl transition-all"
+    >
+      <X className="w-6 h-6" />
+    </button>
+
+    {/* Title */}
+    <div className="text-center mb-10">
+      <h2 className="text-4xl font-light tracking-tight">Gallery • {room.name}</h2>
+      <p className="text-muted-foreground mt-2">{images.length} photos</p>
+    </div>
+
+    {/* RESPONSIVE MASONRY — Perfectly fluid */}
+    <div className="h-[calc(90vh-180px)] overflow-y-auto">
+      <ResponsiveMasonry
+        columnsCountBreakPoints={{ 350: 1, 750: 2, 1024: 3, 1280: 4 }}
+      >
+        <Masonry gutter="16px">
+          {images.map((item, index) => (
+            <div
+              key={index}
+              onClick={() => openLightbox(index)}
+              className="cursor-zoom-in overflow-hidden hover:opacity-90 transition-opacity duration-300"
+            >
+              {typeof item.image === 'object' && (
+                <Media
+                  resource={item.image}
+                  imgClassName="w-full h-auto object-cover block"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  width={1200}
+                  height={1800}
+                  priority={index < 6}
+                />
+              )}
+            </div>
+          ))}
+        </Masonry>
+      </ResponsiveMasonry>
+    </div>
+  </DialogContent>
+</Dialog>

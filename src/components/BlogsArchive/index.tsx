@@ -1,22 +1,13 @@
-import React from 'react'
+// src/components/BlogsArchive.tsx
 
-import { BlogCard, CardPostData } from '../BlogCard'
+import { BlogCard } from '../BlogCard'
 
-export type Props = {
-  posts: CardPostData[]
-}
-
-export const BlogArchive: React.FC<Props> = (props) => {
-  const { posts } = props
-
+export const BlogArchive: React.FC<{ posts: any[] }> = ({ posts }) => {
   return (
-    <div className="mx-auto max-w-5xl space-y-12">
-      {posts?.map((result, index) => {
-        if (typeof result === 'object' && result !== null) {
-          return <BlogCard key={index} doc={result} relationTo="blogs" showCategories />
-        }
-        return null
-      })}
+    <div className="grid gap-20 lg:gap-32">
+      {posts.map((post, i) => (
+        <BlogCard key={post.id} post={post} isReversed={i % 2 === 1} />
+      ))}
     </div>
   )
 }

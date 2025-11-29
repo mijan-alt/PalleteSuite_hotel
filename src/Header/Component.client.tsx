@@ -49,14 +49,10 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({ data }) => {
     setIsMenuOpen(false)
   }
 
-
-  const isActive = (item:any)=> {
-     return pathname === `/${item?.reference?.value.slug}`
+  const isActive = (item: any) => {
+    return pathname === `/${item?.reference?.value.slug}`
   }
 
-
-
- 
   return (
     <header
       className={`
@@ -70,13 +66,15 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({ data }) => {
         <div className="h-16 flex justify-between items-center">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-           {/* <div className="rounded-full overflow-hidden aspect-square size-12">
-                <Media 
-                  resource={data.logo} 
+            {data.logo && (
+              <div className="aspect-square size-12">
+                <Media
+                  resource={data.logo}
                   className="h-full w-full"
                   imgClassName="h-full w-full object-cover object-center"
                 />
-              </div> */}
+              </div>
+            )}
 
             <span className="font-bold text-gray-900 transition-colors duration-300">
               {data.title}
@@ -99,9 +97,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({ data }) => {
                     {...link}
                     appearance="link"
                     className={`font-medium transition-colors cursor-pointer ${
-                      isCurrentActive
-                        ? 'text-primary'
-                        : 'text-gray-900 hover:text-secondary'
+                      isCurrentActive ? 'text-primary' : 'text-gray-900 hover:text-secondary'
                     }`}
                   />
                 </div>
@@ -137,14 +133,14 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({ data }) => {
                 {/* Drawer Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-100">
                   <Link href="/" className="flex items-center gap-2" onClick={closeMenu}>
-                      <div className="rounded-full overflow-hidden aspect-square size-10">
-                        <Media 
-                          resource={data.logo} 
-                          className="h-full w-full"
-                          imgClassName="h-full w-full object-cover object-center"
-                        />
-                      </div>
-                 
+                    <div className="rounded-full overflow-hidden aspect-square size-10">
+                      <Media
+                        resource={data.logo}
+                        className="h-full w-full"
+                        imgClassName="h-full w-full object-cover object-center"
+                      />
+                    </div>
+
                     <div className="text-xl font-bold text-primary"> {data.title}</div>
                   </Link>
                 </div>

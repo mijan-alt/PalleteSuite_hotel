@@ -1,104 +1,69 @@
+// src/components/BlogCard.tsx
 'use client'
 
-import { Blog } from '@/payload-types'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Media } from '@/components/Media'
+import { ArrowRight } from 'lucide-react'
+import { format } from 'date-fns'
 
-export type CardPostData = Pick<Blog, 'slug' | 'categories' | 'meta' | 'title' | 'createdAt'>
+export const BlogCard = ({ post, isReversed = false }: { post: any; isReversed?: boolean }) => {
+  const { title, meta, publishedAt, slug, categories } = post
+  const { description, image } = meta || {}
 
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
-export const BlogCard: React.FC<{
-  doc?: CardPostData
-  relationTo?: 'blogs'
-  showCategories?: boolean
-}> = ({ doc, relationTo = 'blogs', showCategories }) => {
-  if (!doc) return null
-
-  const { slug, categories, meta, title, createdAt } = doc
-  const { description, image: metaImage } = meta || {}
-
-  const categoryTitle =
-    showCategories && categories && categories.length > 0 && typeof categories[0] === 'object'
-      ? categories[0].title || 'Uncategorized'
-      : undefined
-
-  const href = `/${relationTo}/${slug}`
+  const category = categories?.[0]
+  const categoryName = typeof category === 'object' ? category.title : undefined
 
   return (
-    <article className="flex flex-col gap-6 sm:flex-row" aria-labelledby={`blog-title-${slug}`}>
-      {/* Image */}
-      <div className="shrink-0">
-        <Link
-          href={href}
-          className="block hover:opacity-90 focus:opacity-90 transition-opacity duration-200 focus:outline-2 focus:outline-primary focus:outline-offset-2 underline decoration-transparent hover:decoration-primary focus:decoration-primary"
-          aria-label={`Read full article: ${title}`}
-        >
-          {metaImage && typeof metaImage !== 'string' ? (
-            <Media
-              resource={metaImage}
-              className="aspect-video w-full rounded-lg object-cover sm:w-[260px]"
-              alt={`Featured image for ${title}`}
-            />
-          ) : (
-            <div
-              className="aspect-video w-full sm:w-[260px] rounded-lg bg-muted flex items-center justify-center text-sm text-muted-foreground"
-              role="img"
-              aria-label={`No featured image available for ${title}`}
-            >
-              No image
-            </div>
-          )}
+    <article
+      className={`grid lg:grid-cols-2 gap-12 lg:gap-20 items-center ${isReversed ? 'lg:flex-row-reverse' : ''}`}
+    >
+      {/* Image — Full bleed luxury */}
+      <div className="overflow-hidden rounded-none group">
+        <Link href={`/blogs/${slug}`}>
+          <div className="aspect-[4/3] lg:aspect-[5/3] relative overflow-hidden">
+            {image && typeof image !== 'string' ? (
+              <Media resource={image} fill className="object-cover " alt={title} />
+            ) : (
+              <div className="bg-gray-100 w-full h-full" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          </div>
         </Link>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 space-y-3">
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          {categoryTitle && (
-            <Badge className='bg-accent' variant="secondary" aria-label={`Category: ${categoryTitle}`}>
-              {categoryTitle}
-            </Badge>
+      {/* Content — Spacious & refined */}
+      <div className="flex flex-col justify-center space-y-8 py-8">
+        <div className="space-y-4">
+          {categoryName && (
+            <p className="text-sm tracking-widest uppercase text-red-700 font-medium">
+              {categoryName}
+            </p>
           )}
-          <time
-            dateTime={createdAt || ''}
-            aria-label={`Published on ${formatDate(createdAt || '')}`}
-          >
-            {formatDate(createdAt || '')}
-          </time>
+          <h3 className="text-4xl md:text-5xl font-light leading-tight text-gray-900">
+            <Link
+              href={`/blogs/${slug}`}
+              className="hover:text-gray-700 transition-colors duration-300"
+            >
+              {title}
+            </Link>
+          </h3>
+          {publishedAt && (
+            <time className="text-gray-500 text-sm tracking-wide">
+              {format(new Date(publishedAt), 'MMMM d, yyyy')}
+            </time>
+          )}
         </div>
 
-        <h3 id={`blog-title-${slug}`} className="text-xl font-bold leading-tight lg:text-2xl">
-          <p
-            className="text-foreground hover:text-foreground/80 focus:text-foreground/80  transition-all focus:outline-2 "
-            aria-label={`Read full article: ${title}`}
-          >
-            {title}
-          </p>
-        </h3>
-
         {description && (
-          <p className="text-base text-muted-foreground" aria-describedby={`blog-title-${slug}`}>
-            {description}
-          </p>
+          <p className="text-lg text-gray-600 leading-relaxed max-w-lg">{description}</p>
         )}
 
         <Link
-          href={href}
-          className="inline-flex items-center text-secondary underline decoration-1 underline-offset-4 hover:text-primary/80 focus:text-primary/80 hover:decoration-primary/80 focus:decoration-primary/80 transition-all focus:outline-2 focus:outline-primary focus:outline-offset-2"
+          href={`/blogs/${slug}`}
+          className="inline-flex items-center text-gray-900 hover:text-red-700 font-medium text-lg group"
         >
-          Read more
-          <span className="sr-only"> about {title}</span>
-          <ArrowRight className="ml-2 size-4 text-current" aria-hidden="true" />
+          Read the story
+          <ArrowRight className="ml-3 w-5 h-5 transition-transform group-hover:translate-x-2" />
         </Link>
       </div>
     </article>

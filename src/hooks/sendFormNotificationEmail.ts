@@ -75,8 +75,8 @@ export const sendFormNotificationEmail: CollectionAfterChangeHook = async ({
 
     // Send notification email
     await req.payload.sendEmail({
-      to: 'mijanigoni@gmail.com',
-      from: process.env.SMTP_USER || 'noreply@sunlinkenergy.com',
+      to: process.env.SMTP_USER,
+      from: process.env.SMTP_USER,
       replyTo: extractEmailFromSubmission(submissionData),
       subject: `📬 New Submission: ${formDoc.title}`,
       html: generateHTMLEmail({
@@ -101,8 +101,6 @@ export const sendFormNotificationEmail: CollectionAfterChangeHook = async ({
     if (error.code) {
       console.error('Error Code:', error.code)
     }
-
-    // Don't throw - we don't want form submission to fail if email fails
   }
 
   return doc
@@ -135,6 +133,10 @@ function extractEmailFromSubmission(submissionData: any[]): string | undefined {
 /**
  * Generates beautiful HTML email template
  */
+/**
+ * Modern, luxurious, minimalist email template for Palette Suite (2025)
+ * Replace only this function in your existing hook
+ */
 function generateHTMLEmail({
   formTitle,
   submissionHTML,
@@ -147,101 +149,86 @@ function generateHTMLEmail({
   formId: string
 }): string {
   return `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>New Form Submission</title>
-      </head>
-      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
-        <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #f9fafb;">
-          <tr>
-            <td style="padding: 40px 20px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                
-                <!-- Header -->
-                <tr>
-                  <td style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 40px 30px; text-align: center;">
-                    <div style="font-size: 48px; margin-bottom: 10px;">📬</div>
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
-                      New Form Submission
-                    </h1>
-                    <p style="color: #dbeafe; margin: 12px 0 0 0; font-size: 16px; font-weight: 500;">
-                      ${formTitle}
-                    </p>
-                  </td>
-                </tr>
-                
-                <!-- Main Content -->
-                <tr>
-                  <td style="padding: 40px 30px;">
-                    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-                      You've received a new submission from your website. Here are the details:
-                    </p>
-                    
-                    <!-- Submission Data Table -->
-                    <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-                      ${submissionHTML}
-                    </table>
-                  </td>
-                </tr>
-                
-                <!-- Footer Info -->
-                <tr>
-                  <td style="padding: 0 30px 40px 30px;">
-                    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #2563eb; padding: 20px; border-radius: 8px;">
-                      <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
-                        <tr>
-                          <td style="padding-bottom: 8px;">
-                            <span style="color: #1e40af; font-size: 14px; font-weight: 600;">📅 Submitted:</span>
-                            <span style="color: #1e3a8a; font-size: 14px; margin-left: 8px;">${submittedDate}</span>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <span style="color: #1e40af; font-size: 14px; font-weight: 600;">🆔 Form ID:</span>
-                            <span style="color: #1e3a8a; font-size: 14px; margin-left: 8px; font-family: 'Courier New', monospace;">${formId}</span>
-                          </td>
-                        </tr>
-                      </table>
-                    </div>
-                  </td>
-                </tr>
-                
-                <!-- Action Button (Optional) -->
-                <tr>
-                  <td style="padding: 0 30px 40px 30px; text-align: center;">
-                    <a href="${process.env.PAYLOAD_PUBLIC_SERVER_URL}/admin/collections/form-submissions" 
-                       style="display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px; transition: background 0.3s ease;">
-                      View in Admin Panel →
-                    </a>
-                  </td>
-                </tr>
-                
-                <!-- Footer -->
-                <tr>
-                  <td style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-                    <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0;">
-                      This is an automated notification from <strong>Sunlink Energy</strong>.<br/>
-                      You're receiving this because you're listed as the form notification recipient.
-                    </p>
-                    <p style="color: #9ca3af; font-size: 12px; margin: 15px 0 0 0;">
-                      © ${new Date().getFullYear()} Sunlink Energy. All rights reserved.
-                    </p>
-                  </td>
-                </tr>
-                
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-    </html>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New Inquiry – Palette Suite</title>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#faf9f7;font-family:'Inter',sans-serif;color:#1f1f1f;">
+  <center style="width:100%;background:#faf9f7;padding:40px 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,0.06);">
+      
+      <!-- Header – Warm Desert Gradient -->
+      <tr>
+        <td style="background:linear-gradient(135deg,#b74e4e 0%,#8b2d4a 100%);padding:70px 40px;text-align:center;">
+          <h1 style="color:#ffffff;font-family:'Libre Baskerville',serif;font-size:40px;font-weight:400;margin:0;letter-spacing:1.5px;">
+            A Message Has Arrived
+          </h1>
+          <p style="color:#fff8f8;font-size:18px;margin:16px 0 0;opacity:0.9;">
+            ${formTitle}
+          </p>
+        </td>
+      </tr>
+
+      <!-- Content -->
+      <tr>
+        <td style="padding:60px 50px 50px;">
+          <p style="font-size:18px;line-height:1.7;margin:0 0 36px;color:#333;">
+            A new inquiry has reached Palette Suite.
+          </p>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 16px;">
+            ${submissionHTML}
+          </table>
+
+          <div style="margin:50px 0 20px;height:1px;background:#e8e6e2;"></div>
+
+          <table width="100%" style="font-size:15px;color:#666;">
+            <tr>
+              <td style="padding:8px 0;"><strong>Received</strong></td>
+              <td style="padding:8px 0;text-align:right;">${submittedDate}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;"><strong>Form ID</strong></td>
+              <td style="padding:8px 0;text-align:right;font-family:monospace;">${formId}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- CTA -->
+      <tr>
+        <td style="padding:0 50px 70px;text-align:center;">
+          <a href="${process.env.PAYLOAD_PUBLIC_SERVER_URL}/admin/collections/form-submissions"
+             style="display:inline-block;background:#8b2d4a;color:#ffffff;text-decoration:none;padding:18px 40px;border-radius:12px;font-weight:500;font-size:16px;letter-spacing:0.5px;">
+            Open in Admin Panel
+          </a>
+        </td>
+      </tr>
+
+      <!-- Signature -->
+      <tr>
+        <td style="background:#f8f5f2;padding:50px 40px;text-align:center;">
+          <p style="margin:0;font-family:'Libre Baskerville',serif;font-size:22px;color:#555;letter-spacing:1px;">
+            Palette Suite
+          </p>
+          <p style="margin:12px 0 0;font-size:14px;color:#888;">
+            Where every arrival feels like coming home
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin-top:50px;font-size:12px;color:#aaa;">
+      © ${new Date().getFullYear()} Palette Suite • Automated notification
+    </p>
+  </center>
+</body>
   `
 }
-
 /**
  * Generates plain text email (fallback)
  */

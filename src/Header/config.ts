@@ -11,16 +11,15 @@ export const Header: GlobalConfig = {
   fields: [
     {
       name: 'logo',
-      label:'Company logo',
+      label: 'Company logo',
       type: 'upload',
       relationTo: 'media',
-      required: true,
     },
-     {
+    {
       name: 'title',
-      label:'Company name',
+      label: 'Company name',
       type: 'text',
-      defaultValue:'Hezbet'
+      defaultValue: 'Hezbet',
     },
     {
       name: 'navItems',

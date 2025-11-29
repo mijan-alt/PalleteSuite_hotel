@@ -4,65 +4,81 @@ import { draftMode } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { unstable_cache } from 'next/cache'
 import { PayloadRedirects } from '@/components/PayloadRedirects'
-
-import { RefreshRouteOnSave } from '@payloadcms/live-preview-react'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { RoomClientPage } from './client-page'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 
-type Room = {
-  id: string
-  name: string
-  slug: string
-  description: string
-  pricePerNight: number
-  gallery: { image: any }[]
-  features?: { guests?: number; beds?: string; squareFeet?: number }
-  availability: string
-  meta?: {
-    title?: string
-    description?: string
-    image?: any
-  }
+const getRoomBySlug = (slug: string) =>
+  unstable_cache(
+    async (slug: string) => {
+      const payload = await getPayload({ config })
+
+      const { docs } = await payload.find({
+        collection: 'rooms',
+        where: {
+          slug: {
+            equals: slug,
+          },
+        },
+        limit: 1,
+        depth: 6,
+      })
+
+      return docs[0] ?? null
+    },
+    [`room-${slug}`],
+    {
+      tags: ['rooms'],
+    },
+  )(slug)
+
+const getAllRooms = unstable_cache(
+  async () => {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'rooms',
+      pagination: false,
+      select: { slug: true },
+    })
+    return result.docs
+  },
+  ['all-rooms'],
+  { tags: ['rooms'] },
+)
+
+const getBusinessLocation = unstable_cache(
+  async () => {
+    const payload = await getPayload({ config })
+    return await payload.findGlobal({
+      slug: 'businessLocation',
+    })
+  },
+  ['business-location'],
+  { tags: ['businessLocation'] },
+)
+
+// Optimized function to fetch both room and location in parallel
+const getRoomAndLocation = async (slug: string) => {
+  const [room, businessLocation] = await Promise.all([
+    getRoomBySlug(slug),
+    getBusinessLocation(),
+  ])
+
+  return { room, businessLocation }
+}
+  
+type PageProps = {
+  params: Promise<{ slug: string }>
 }
 
-// Cached fetch functions
-const fetchRoom = async (slug: string) => {
-  const payload = await getPayload({ config })
-  const result = await payload.find({
-    collection: 'rooms',
-    where: { slug: { equals: slug } },
-    depth: 3,
-    limit: 1,
-  })
-  return result.docs[0] 
-}
-
-const fetchAllRooms = async () => {
-  const payload = await getPayload({ config })
-  const result = await payload.find({
-    collection: 'rooms',
-    pagination: false,
-  })
-  return result.docs 
-}
-
-// Cached versions
-const getCachedRoom = (slug: string, draft: boolean) =>
-  draft
-    ? fetchRoom(slug)
-    : unstable_cache(fetchRoom, [`room-${slug}`], { revalidate: 60 })(slug)
-
-const getCachedRooms = () =>
-  unstable_cache(fetchAllRooms, ['rooms-static-params'], { revalidate: 600 })()
-
-export default async function RoomPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function RoomPage({ params }: PageProps) {
   const { slug } = await params
   const { isEnabled: draft } = await draftMode()
+  console.log('Draft mode:', draft)
 
-  const room = await getCachedRoom(slug, draft)
+  const { room, businessLocation } = await getRoomAndLocation(slug)
 
   if (!room) {
     return <PayloadRedirects url={`/rooms/${slug}`} />
@@ -72,50 +88,30 @@ export default async function RoomPage({ params }: { params: Promise<{ slug: str
     <>
       <PayloadRedirects disableNotFound url={`/rooms/${slug}`} />
       {draft && <LivePreviewListener />}
-      <RoomClientPage room={room} />
+      <RoomClientPage room={room} businessLocation={businessLocation} />
     </>
   )
 }
 
-// Generate static params at build time
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params
+  const room = await getRoomBySlug(slug)
+
+  if (!room) return { title: 'Room Not Found' }
+
+  return {
+    title: `${room.name} | Your Hotel`,
+    description: room.description,
+    openGraph: mergeOpenGraph({
+      title: room.name,
+      url: `/rooms/${slug}`,
+    }),
+  }
+}
+
 export async function generateStaticParams() {
-  const rooms = await getCachedRooms()
+  const rooms = await getAllRooms()
   return rooms.map((room) => ({
     slug: room.slug,
   }))
 }
-
-// Dynamic metadata (SEO)
-// export async function generateMetadata({
-//   params,
-// }: {
-//   params: Promise<{ slug: string }>
-// }): Promise<Metadata> {
-//   const { slug } = await params
-//   const { isEnabled: draft } = await draftMode()
-//   const room = await getCachedRoom(slug, draft)
-
-//   if (!room) return { title: 'Room Not Found' }
-
-//   const ogImage =
-//     room.meta?.image &&
-//     typeof room.meta.image === 'object' &&
-//     'url' in room.meta.image
-//       ? `${process.env.NEXT_PUBLIC_SERVER_URL}${room.meta.image.url}`
-//       : room.gallery?.[0]?.image &&
-//         typeof room.gallery[0].image === 'object' &&
-//         'url' in room.gallery[0].image
-//       ? `${process.env.NEXT_PUBLIC_SERVER_URL}${room.gallery[0].image.url}`
-//       : undefined
-
-//   return {
-//     title: room.meta?.title || room.name,
-//     description: room.meta?.description || room.description?.slice(0, 160),
-//     openGraph: mergeOpenGraph({
-//       title: room.meta?.title || room.name,
-//       description: room.meta?.description || room.description?.slice(0, 160),
-//       url: `/rooms/${slug}`,
-//       images: ogImage ? [{ url: ogImage }] : undefined,
-//     }),
-//   }
-// }
