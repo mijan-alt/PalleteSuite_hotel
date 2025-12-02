@@ -266,7 +266,7 @@ export function RoomClientPage({ room, businessLocation }: RoomClientPageProps) 
               {/* Top Bar */}
               <div className="fixed top-0 left-0 right-0 h-24 bg-white/95 backdrop-blur-xl border-b z-10 flex items-center justify-between px-8">
                 <div>
-                  <h2 className="text-4xl font-light tracking-tight">Gallery • {room.name}</h2>
+                  <h2 className="sm:text-4xl font-light tracking-tight">Gallery • {room.name}</h2>
                   <p className="text-muted-foreground text-lg">{images.length} photos</p>
                 </div>
                 <button
@@ -597,15 +597,15 @@ export function RoomClientPage({ room, businessLocation }: RoomClientPageProps) 
             <div className="fixed inset-0 bg-black/70 z-[100]" />
 
             {/* Scrollable Modal Container */}
-            <div className="fixed inset-0 z-[101] flex items-start justify-center overflow-y-auto py-8 px-4">
-              <div className="bg-white rounded-3xl shadow-3xl border-2 border-gray-100 w-full max-w-6xl mx-auto my-8">
+            <div className="fixed inset-0 z-[101] flex items-start justify-center overflow-y-auto  px-4">
+              <div className="bg-white rounded-3xl shadow-3xl border-2 border-gray-100 w-full my-8">
                 {/* Header – Sticky */}
-                <div className="sticky top-0 bg-white rounded-t-3xl border-b z-10 px-10 ">
+                <div className="bg-white rounded-t-3xl border-b z-10 px-4 ">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h2 className="text-4xl lg:text-5xl font-light tracking-tight">
+                      {/* <h2 className="text-4xl lg:text-5xl font-light tracking-tight">
                         Select Your Dates
-                      </h2>
+                      </h2> */}
                       <p className="text-lg text-muted-foreground mt-4">
                         {checkIn && checkOut && checkOut > checkIn ? (
                           <span className="font-medium">
