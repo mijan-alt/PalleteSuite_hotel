@@ -1,255 +1,1815 @@
+// components/RoomSelector.tsx
 'use client'
-import React from 'react'
-import { Gutter } from '@payloadcms/ui'
-import Link from 'next/link'
-import { useAuth } from '@payloadcms/ui'
 
-const CustomDashboard = () => {
-  const { user } = useAuth()
+import { useEffect } from 'react'
+import { useFormFields, useForm } from '@payloadcms/ui'
 
-  return (
-    <Gutter className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="mb-10">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold text-foreground mb-2">
-              Palette Suite Administration
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              Welcome back, {user?.name?.split(' ')[0] || 'Administrator'}
-            </p>
-          </div>
-          <div className="flex items-center px-6 py-3 bg-success/10 border border-success/20 rounded-xl">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-success rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-success">All systems operational</span>
-            </div>
-          </div>
-        </div>
-      </div>
+export const RoomSelector = ({ path }: { path: string }) => {
+  const room = useFormFields(([fields, dispatch]) => fields[path]?.value)
+  const form = useForm()
 
-      <div className="space-y-10">
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-8">
-          <div className="group relative bg-card rounded-xl border border-border p-8 hover:border-primary/30 transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-primary/10 rounded-xl">
-                  <span className="text-2xl">👤</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Today's Arrivals</p>
-                  <p className="text-3xl font-bold text-foreground">3</p>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">Guests scheduled to check in</p>
-            </div>
-          </div>
+  useEffect(() => {
+    const fetchRoomPrice = async () => {
+      if (!room) return
 
-          <div className="group relative bg-card rounded-xl border border-border p-8 hover:border-warning/30 transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-warning/10 rounded-xl">
-                  <span className="text-2xl">⏳</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Pending Actions</p>
-                  <p className="text-3xl font-bold text-foreground">7</p>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">Bookings requiring confirmation</p>
-            </div>
-          </div>
+      try {
+        const roomId = typeof room === 'string' ? room : room.id
+        const response = await fetch(`/api/rooms/${roomId}`)
+        const roomData = await response.json()
 
-          <div className="group relative bg-card rounded-xl border border-border p-8 hover:border-success/30 transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-success/10 rounded-xl">
-                  <span className="text-2xl">🛏️</span>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Occupancy</p>
-                  <div className="flex items-baseline gap-4">
-                    <span className="text-3xl font-bold text-foreground">5/8</span>
-                    <span className="text-lg font-semibold text-success">63%</span>
-                  </div>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">Suites currently occupied</p>
-            </div>
-          </div>
+        if (roomData?.pricePerNight) {
+          // Auto-populate pricePerNight
+          form.dispatchFields({
+            type: 'UPDATE',
+            path: 'pricePerNight',
+            value: roomData.pricePerNight,
+          })
+          console.log('Auto-populated pricePerNight:', roomData.pricePerNight)
+        }
+      } catch (error) {
+        console.error('Error fetching room price:', error)
+      }
+    }
 
-          <div className="group relative bg-card rounded-xl border border-border p-8 hover:border-primary/30 transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-primary/10 rounded-xl">
-                  <span className="text-2xl">₦</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Today's Revenue</p>
-                  <p className="text-3xl font-bold text-foreground">2,850,000</p>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">Total revenue generated today</p>
-            </div>
-          </div>
-        </div>
+    fetchRoomPrice()
+  }, [room, form])
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          {/* Actions Panel */}
-          <div className="bg-card rounded-xl border border-border p-8">
-            <h2 className="text-2xl font-bold text-foreground mb-8">Immediate Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Link
-                href="/admin/collections/bookings/create"
-                className="group relative flex items-center gap-4 p-6 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all duration-300 shadow-sm hover:shadow-md"
-              >
-                <div className="p-3 bg-primary-foreground/20 rounded-xl">
-                  <span className="text-xl">📅</span>
-                </div>
-                <span className="font-medium">Create New Booking</span>
-              </Link>
-
-              <Link
-                href="/admin/collections/bookings?where[status][equals]=pending"
-                className="group relative flex items-center justify-between p-6 bg-warning text-foreground rounded-xl hover:bg-warning/90 transition-all duration-300 shadow-sm hover:shadow-md"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-foreground/20 rounded-xl">
-                    <span className="text-xl">⚠️</span>
-                  </div>
-                  <span className="font-medium">Review Pending Bookings</span>
-                </div>
-                <div className="flex items-center justify-center min-w-[28px] h-7 bg-foreground/20 rounded-full text-sm font-semibold">
-                  7
-                </div>
-              </Link>
-
-              <Link
-                href="/admin/collections/rooms"
-                className="group flex items-center gap-4 p-6 bg-success text-primary-foreground rounded-xl hover:bg-success/90 transition-all duration-300 shadow-sm hover:shadow-md"
-              >
-                <div className="p-3 bg-primary-foreground/20 rounded-xl">
-                  <span className="text-xl">🛏️</span>
-                </div>
-                <span className="font-medium">Manage Suite Status</span>
-              </Link>
-
-              <Link
-                href="/admin/collections/inquiries"
-                className="group flex items-center gap-4 p-6 bg-muted text-foreground rounded-xl hover:bg-muted/80 transition-all duration-300 shadow-sm hover:shadow-md"
-              >
-                <div className="p-3 bg-foreground/20 rounded-xl">
-                  <span className="text-xl">💬</span>
-                </div>
-                <span className="font-medium">Respond to Inquiries</span>
-                <div className="ml-auto flex items-center justify-center min-w-[28px] h-7 bg-foreground/20 rounded-full text-sm font-semibold">
-                  4
-                </div>
-              </Link>
-            </div>
-          </div>
-
-          {/* Suite Status Panel */}
-          <div className="bg-card rounded-xl border border-border p-8">
-            <h2 className="text-2xl font-bold text-foreground mb-6">Suite Status Overview</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-5 bg-destructive/5 border border-destructive/20 rounded-xl">
-                <div>
-                  <div className="font-semibold text-foreground">Suite 101</div>
-                  <div className="text-sm text-muted-foreground">Mr. Adebayo</div>
-                </div>
-                <div className="text-right">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-destructive/10 text-destructive text-sm font-medium rounded-full border border-destructive/20">
-                    <div className="w-2.5 h-2.5 bg-destructive rounded-full"></div>
-                    Occupied
-                  </div>
-                  <div className="text-sm text-destructive mt-1">Departs: Tomorrow</div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-5 bg-success/5 border border-success/20 rounded-xl">
-                <div>
-                  <div className="font-semibold text-foreground">Suite 102</div>
-                  <div className="text-sm text-muted-foreground">Ms. Okafor</div>
-                </div>
-                <div className="text-right">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-success/10 text-success text-sm font-medium rounded-full border border-success/20">
-                    <div className="w-2.5 h-2.5 bg-success rounded-full"></div>
-                    Occupied
-                  </div>
-                  <div className="text-sm text-success mt-1">Departs: Nov 29</div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-5 bg-muted/50 border border-border rounded-xl">
-                <div className="font-semibold text-foreground">Suite 103</div>
-                <div className="text-right">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-muted text-muted-foreground text-sm font-medium rounded-full border border-border">
-                    <div className="w-2.5 h-2.5 bg-muted-foreground rounded-full"></div>
-                    Available
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-5 bg-warning/5 border border-warning/20 rounded-xl">
-                <div className="font-semibold text-foreground">Suite 104</div>
-                <div className="text-right">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-warning/10 text-warning text-sm font-medium rounded-full border border-warning/20">
-                    <div className="w-2.5 h-2.5 bg-warning rounded-full"></div>
-                    Cleaning
-                  </div>
-                  <div className="text-sm text-warning mt-1">Ready by 14:00</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="bg-card rounded-xl border border-border p-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-foreground">Recent Activity</h2>
-            <Link
-              href="/admin/activity-log"
-              className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              View Full Log
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {[
-              {
-                time: '08:45',
-                description: 'Mr. Adebayo checked into Pearl Sanctuary',
-                type: 'Check-in',
-              },
-              { time: '08:12', description: 'New inquiry from Mrs. Okafor', type: 'Inquiry' },
-              { time: '07:30', description: 'Suite 7 housekeeping completed', type: 'Maintenance' },
-              { time: '07:15', description: 'New booking: Suite 105 for Dec 1-5', type: 'Booking' },
-              { time: '06:45', description: 'System backup completed', type: 'System' },
-            ].map((activity, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-4 p-4 rounded-xl hover:bg-accent transition-colors"
-              >
-                <div className="flex-shrink-0 w-12 text-sm font-mono text-muted-foreground">
-                  {activity.time}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground">{activity.description}</p>
-                </div>
-                <div className="flex-shrink-0 px-3 py-1 text-xs font-medium rounded-full bg-muted text-muted-foreground">
-                  {activity.type}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </Gutter>
-  )
+  return null
 }
 
-export default CustomDashboard
+// components/DateRangeCalculator.tsx
+'use client'
+
+import { useEffect } from 'react'
+import { useFormFields, useForm } from '@payloadcms/ui'
+
+export const DateRangeCalculator = () => {
+  const checkIn = useFormFields(([fields]) => fields.checkIn?.value)
+  const checkOut = useFormFields(([fields]) => fields.checkOut?.value)
+  const pricePerNight = useFormFields(([fields]) => fields.pricePerNight?.value)
+  const discount = useFormFields(([fields]) => fields.discount?.value)
+  const form = useForm()
+
+  useEffect(() => {
+    if (checkIn && checkOut) {
+      const checkInDate = new Date(checkIn as string)
+      const checkOutDate = new Date(checkOut as string)
+      const timeDiff = checkOutDate.getTime() - checkInDate.getTime()
+      const nights = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
+
+      const totalNights = nights > 0 ? nights : 1
+      
+      form.dispatchFields({
+        type: 'UPDATE',
+        path: 'totalNights',
+        value: totalNights,
+      })
+      console.log('Auto-calculated totalNights:', totalNights)
+
+      // Calculate total price if we have pricePerNight
+      if (pricePerNight && totalNights) {
+        const price = Number(pricePerNight) || 0
+        const discountAmount = Number(discount) || 0
+        const totalPrice = price * totalNights - discountAmount
+        
+        form.dispatchFields({
+          type: 'UPDATE',
+          path: 'totalPrice',
+          value: totalPrice,
+        })
+        console.log('Auto-calculated totalPrice:', totalPrice)
+      }
+    }
+  }, [checkIn, checkOut, pricePerNight, discount, form])
+
+  return null
+}
+
+// components/PriceCalculator.tsx
+'use client'
+
+import { useEffect } from 'react'
+import { useFormFields, useForm } from '@payloadcms/ui'
+
+export const PriceCalculator = () => {
+  const pricePerNight = useFormFields(([fields]) => fields.pricePerNight?.value)
+  const totalNights = useFormFields(([fields]) => fields.totalNights?.value)
+  const discount = useFormFields(([fields]) => fields.discount?.value)
+  const form = useForm()
+
+  useEffect(() => {
+    if (pricePerNight && totalNights) {
+      const price = Number(pricePerNight) || 0
+      const nights = Number(totalNights) || 0
+      const discountAmount = Number(discount) || 0
+      const totalPrice = price * nights - discountAmount
+      
+      form.dispatchFields({
+        type: 'UPDATE',
+        path: 'totalPrice',
+        value: totalPrice,
+      })
+      console.log('Auto-calculated totalPrice:', totalPrice)
+    }
+  }, [pricePerNight, totalNights, discount, form])
+
+  return null
+}
+
+// ============================================
+// UPDATED BOOKINGS COLLECTION
+// ============================================
+
+// collections/Bookings.ts
+import type { CollectionConfig } from 'payload'
+import type { Field } from 'payload'
+
+const assignedRoomNumberField: Field = {
+  name: 'assignedRoomNumber',
+  label: 'Assigned Room Number',
+  type: 'text',
+  admin: {
+    description: 'Select specific room number for this booking',
+    position: 'sidebar',
+    condition: (data) => !!data.room && data.status !== 'checked-out',
+    components: {
+      Field: {
+        path: '@/components/RoomNumberSelect#RoomNumberSelect',
+        clientProps: {},
+      },
+    },
+  },
+}
+
+export const Bookings: CollectionConfig<'bookings'> = {
+  slug: 'bookings',
+  admin: {
+    useAsTitle: 'bookingId',
+    defaultColumns: [
+      'bookingId',
+      'assignedRoomNumber',
+      'room',
+      'checkIn',
+      'checkOut',
+      'totalPrice',
+      'status',
+      'firstName',
+    ],
+    group: 'Core Operations',
+    description: 'Manage all guest reservations - both online and walk-in bookings',
+  },
+  access: {
+    create: () => true,
+    read: ({ req }) => {
+      return !!req.user
+    },
+  },
+
+  fields: [
+    {
+      name: 'bookingId',
+      type: 'text',
+      required: true,
+      unique: true,
+      admin: {
+        readOnly: true,
+        description: 'Auto-generated on save',
+      },
+    },
+
+    {
+      name: 'bookingSource',
+      label: 'Booking Source',
+      type: 'select',
+      options: [
+        { label: '🌐 Online Booking', value: 'online' },
+        { label: '🏨 Walk-in (Front Desk)', value: 'walkin' },
+        { label: '📞 Phone Reservation', value: 'phone' },
+      ],
+      defaultValue: 'online',
+      required: true,
+      admin: {
+        position: 'sidebar',
+        description: 'How was this booking made?',
+      },
+    },
+
+    {
+      type: 'collapsible',
+      label: 'Guest Information',
+      admin: {
+        initCollapsed: false,
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'firstName',
+              type: 'text',
+              required: true,
+              admin: { width: '50%' },
+            },
+            {
+              name: 'lastName',
+              type: 'text',
+              required: true,
+              admin: { width: '50%' },
+            },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'email',
+              type: 'email',
+              required: true,
+              admin: { width: '50%' },
+            },
+            {
+              name: 'phone',
+              type: 'text',
+              admin: {
+                width: '50%',
+                placeholder: '+234 XXX XXX XXXX',
+              },
+            },
+          ],
+        },
+        {
+          name: 'idType',
+          label: 'ID Type',
+          type: 'select',
+          options: [
+            { label: 'National ID', value: 'national-id' },
+            { label: 'International Passport', value: 'passport' },
+            { label: "Driver's License", value: 'drivers-license' },
+            { label: 'Other', value: 'other' },
+          ],
+          admin: {
+            description: 'For walk-in guests',
+          },
+        },
+        {
+          name: 'idNumber',
+          label: 'ID Number',
+          type: 'text',
+          admin: {
+            description: 'Optional but recommended for walk-ins',
+          },
+        },
+        {
+          name: 'specialRequests',
+          label: 'Special Requests / Notes',
+          type: 'textarea',
+          admin: {
+            rows: 3,
+            placeholder: 'Early check-in, extra pillows, dietary requirements, etc.',
+          },
+        },
+      ],
+    },
+
+    {
+      type: 'collapsible',
+      label: 'Room & Stay Details',
+      admin: {
+        initCollapsed: false,
+      },
+      fields: [
+        // Hidden field to trigger calculations
+        {
+          name: '_calculationTrigger',
+          type: 'ui',
+          admin: {
+            components: {
+              Field: '@/components/DateRangeCalculator#DateRangeCalculator',
+            },
+          },
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'room',
+              label: 'Room Type',
+              type: 'relationship',
+              relationTo: 'rooms',
+              required: true,
+              admin: {
+                description: 'Select the room category - price will auto-populate',
+                width: '60%',
+                components: {
+                  afterInput: [
+                    {
+                      path: '@/components/RoomSelector#RoomSelector',
+                      clientProps: { path: 'room' },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              name: 'guests',
+              type: 'number',
+              required: true,
+              defaultValue: 1,
+              min: 1,
+              max: 10,
+              admin: {
+                description: 'Number of guests',
+                width: '40%',
+              },
+            },
+          ],
+        },
+        assignedRoomNumberField as Field,
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'checkIn',
+              type: 'date',
+              required: true,
+              admin: {
+                description: 'Check-in date',
+                width: '50%',
+                date: {
+                  displayFormat: 'dd MMM yyyy',
+                },
+              },
+            },
+            {
+              name: 'checkOut',
+              type: 'date',
+              required: true,
+              admin: {
+                description: 'Check-out date',
+                width: '50%',
+                date: {
+                  displayFormat: 'dd MMM yyyy',
+                },
+              },
+            },
+          ],
+        },
+        {
+          name: 'totalNights',
+          type: 'number',
+          required: true,
+          admin: {
+            description: '✨ Calculated automatically from dates',
+            readOnly: true,
+          },
+        },
+      ],
+    },
+
+    {
+      type: 'collapsible',
+      label: 'Pricing Details',
+      admin: {
+        initCollapsed: false,
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'pricePerNight',
+              label: 'Price per Night (₦)',
+              type: 'number',
+              required: true,
+              admin: {
+                description: '✨ Auto-filled from room type (editable)',
+                width: '50%',
+              },
+            },
+            {
+              name: 'totalPrice',
+              label: 'Total Price (₦)',
+              type: 'number',
+              required: true,
+              admin: {
+                description: '✨ Calculated: (Price × Nights) - Discount',
+                width: '50%',
+                readOnly: true,
+              },
+            },
+          ],
+        },
+        {
+          name: 'discount',
+          label: 'Discount Amount (₦)',
+          type: 'number',
+          defaultValue: 0,
+          admin: {
+            description: 'Optional discount - total price updates automatically',
+            components: {
+              afterInput: [
+                {
+                  path: '@/components/PriceCalculator#PriceCalculator',
+                },
+              ],
+            },
+          },
+        },
+        {
+          name: 'paymentStatus',
+          label: 'Payment Status',
+          type: 'select',
+          options: [
+            { label: '💰 Paid in Full', value: 'paid' },
+            { label: '⏳ Deposit Paid', value: 'deposit' },
+            { label: '❌ Not Paid', value: 'unpaid' },
+          ],
+          defaultValue: 'unpaid',
+          admin: {
+            description: 'Track payment for walk-ins',
+          },
+        },
+        {
+          name: 'paymentMethod',
+          label: 'Payment Method',
+          type: 'select',
+          options: [
+            { label: 'Cash', value: 'cash' },
+            { label: 'Card (POS)', value: 'card' },
+            { label: 'Bank Transfer', value: 'transfer' },
+            { label: 'Online Payment', value: 'online' },
+          ],
+          admin: {
+            condition: (data) => data.paymentStatus !== 'unpaid',
+          },
+        },
+      ],
+    },
+
+    {
+      name: 'completedRoomNumber',
+      label: 'Room Number (Historical)',
+      type: 'text',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        condition: (data) => data.status === 'checked-out' && !!data.assignedRoomNumber,
+        description: 'The room number for this completed booking',
+        components: {
+          Field: {
+            path: '@/components/ReadOnlyRoomDisplay#ReadOnlyRoomDisplay',
+          },
+        },
+      },
+    },
+
+    {
+      name: 'status',
+      type: 'select',
+      options: [
+        { label: '⏳ Pending', value: 'pending' },
+        { label: '✅ Confirmed', value: 'confirmed' },
+        { label: '🔑 Checked In', value: 'checked-in' },
+        { label: '✔️ Checked Out', value: 'checked-out' },
+        { label: '❌ Cancelled', value: 'cancelled' },
+        { label: '🚫 No Show', value: 'no-show' },
+      ],
+      defaultValue: 'pending',
+      required: true,
+      admin: {
+        position: 'sidebar',
+        description: 'Current booking status',
+      },
+    },
+
+    {
+      name: 'actualCheckInTime',
+      label: 'Actual Check-in Time',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        condition: (data) => data.status === 'checked-in' || data.status === 'checked-out',
+        date: {
+          displayFormat: 'dd MMM yyyy HH:mm',
+        },
+      },
+    },
+    {
+      name: 'actualCheckOutTime',
+      label: 'Actual Check-out Time',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        condition: (data) => data.status === 'checked-out',
+        date: {
+          displayFormat: 'dd MMM yyyy HH:mm',
+        },
+      },
+    },
+
+    {
+      name: 'internalNotes',
+      label: 'Internal Notes (Staff Only)',
+      type: 'textarea',
+      admin: {
+        description: 'Private notes not visible to guests',
+        rows: 4,
+      },
+    },
+  ],
+
+  hooks: {
+    beforeChange: [
+      async ({ data, req, operation, originalDoc }) => {
+        console.log('beforeChange hook triggered for bookings collection')
+        
+        // Generate booking ID on create
+        if (operation === 'create') {
+          const year = new Date().getFullYear()
+          const existingCount = await req.payload.count({
+            collection: 'bookings',
+          })
+          const sequence = String(existingCount.totalDocs + 1).padStart(6, '0')
+          data.bookingId = `PAL-${year}-${sequence}`
+        }
+
+        // Backup: Auto-populate pricePerNight if not already set
+        if (data.room && !data.pricePerNight) {
+          try {
+            const room = await req.payload.findByID({
+              collection: 'rooms',
+              id: typeof data.room === 'string' ? data.room : data.room.id,
+            })
+            
+            if (room && typeof room === 'object' && 'pricePerNight' in room) {
+              data.pricePerNight = room.pricePerNight as number
+            }
+          } catch (error) {
+            req.payload.logger.error('Error fetching room for price:', error)
+          }
+        }
+
+        // Backup: Calculate nights if not already set
+        if (data.checkIn && data.checkOut && !data.totalNights) {
+          const checkIn = new Date(data.checkIn)
+          const checkOut = new Date(data.checkOut)
+          const timeDiff = checkOut.getTime() - checkIn.getTime()
+          const nights = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
+          data.totalNights = nights > 0 ? nights : 1
+        }
+
+        // Backup: Calculate total price if not already set
+        if (data.pricePerNight && data.totalNights && !data.totalPrice) {
+          data.totalPrice = data.pricePerNight * data.totalNights
+          if (data.discount && data.discount > 0) {
+            data.totalPrice -= data.discount
+          }
+        }
+
+        // Auto-populate actual check-in time
+        if (data.status === 'checked-in' && originalDoc?.status !== 'checked-in') {
+          data.actualCheckInTime = new Date().toISOString()
+          if (!data.assignedRoomNumber) {
+            throw new Error('Please assign a room number before checking in the guest.')
+          }
+          if (data.bookingSource === 'walkin' && data.paymentStatus === 'unpaid') {
+            req.payload.logger.warn('Walk-in guest checked in without payment recorded')
+          }
+        }
+
+        // Auto-populate actual check-out time
+        if (data.status === 'checked-out' && originalDoc?.status !== 'checked-out') {
+          data.actualCheckOutTime = new Date().toISOString()
+        }
+
+        return data
+      },
+    ],
+
+    afterChange: [
+      async ({ doc, req, operation }) => {
+        if (operation === 'create' && doc.bookingSource === 'walkin') {
+          req.payload.logger.info(`Walk-in booking created: ${doc.bookingId}`)
+        }
+      },
+    ],
+  },
+}
+
+
+
+
+
+
+
+
+// components/RoomSelector.tsx
+'use client'
+
+import { useEffect } from 'react'
+import { useFormFields, useForm } from '@payloadcms/ui'
+
+export const RoomSelector = ({ path }: { path: string }) => {
+  const room = useFormFields(([fields, dispatch]) => fields[path]?.value)
+  const form = useForm()
+
+  useEffect(() => {
+    const fetchRoomPrice = async () => {
+      if (!room) return
+
+      try {
+        const roomId = typeof room === 'string' ? room : room.id
+        const response = await fetch(`/api/rooms/${roomId}`)
+        const roomData = await response.json()
+
+        if (roomData?.pricePerNight) {
+          // Auto-populate pricePerNight
+          form.dispatchFields({
+            type: 'UPDATE',
+            path: 'pricePerNight',
+            value: roomData.pricePerNight,
+          })
+          console.log('Auto-populated pricePerNight:', roomData.pricePerNight)
+        }
+      } catch (error) {
+        console.error('Error fetching room price:', error)
+      }
+    }
+
+    fetchRoomPrice()
+  }, [room, form])
+
+  return null
+}
+
+// components/DateRangeCalculator.tsx
+'use client'
+
+import { useEffect } from 'react'
+import { useFormFields, useForm } from '@payloadcms/ui'
+
+export const DateRangeCalculator = () => {
+  const checkIn = useFormFields(([fields]) => fields.checkIn?.value)
+  const checkOut = useFormFields(([fields]) => fields.checkOut?.value)
+  const pricePerNight = useFormFields(([fields]) => fields.pricePerNight?.value)
+  const discount = useFormFields(([fields]) => fields.discount?.value)
+  const form = useForm()
+
+  useEffect(() => {
+    if (checkIn && checkOut) {
+      const checkInDate = new Date(checkIn as string)
+      const checkOutDate = new Date(checkOut as string)
+      const timeDiff = checkOutDate.getTime() - checkInDate.getTime()
+      const nights = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
+
+      const totalNights = nights > 0 ? nights : 1
+      
+      form.dispatchFields({
+        type: 'UPDATE',
+        path: 'totalNights',
+        value: totalNights,
+      })
+      console.log('Auto-calculated totalNights:', totalNights)
+
+      // Calculate total price if we have pricePerNight
+      if (pricePerNight && totalNights) {
+        const price = Number(pricePerNight) || 0
+        const discountAmount = Number(discount) || 0
+        const totalPrice = price * totalNights - discountAmount
+        
+        form.dispatchFields({
+          type: 'UPDATE',
+          path: 'totalPrice',
+          value: totalPrice,
+        })
+        console.log('Auto-calculated totalPrice:', totalPrice)
+      }
+    }
+  }, [checkIn, checkOut, pricePerNight, discount, form])
+
+  return null
+}
+
+// components/PriceCalculator.tsx
+'use client'
+
+import { useEffect } from 'react'
+import { useFormFields, useForm } from '@payloadcms/ui'
+
+export const PriceCalculator = () => {
+  const pricePerNight = useFormFields(([fields]) => fields.pricePerNight?.value)
+  const totalNights = useFormFields(([fields]) => fields.totalNights?.value)
+  const discount = useFormFields(([fields]) => fields.discount?.value)
+  const form = useForm()
+
+  useEffect(() => {
+    if (pricePerNight && totalNights) {
+      const price = Number(pricePerNight) || 0
+      const nights = Number(totalNights) || 0
+      const discountAmount = Number(discount) || 0
+      const totalPrice = price * nights - discountAmount
+      
+      form.dispatchFields({
+        type: 'UPDATE',
+        path: 'totalPrice',
+        value: totalPrice,
+      })
+      console.log('Auto-calculated totalPrice:', totalPrice)
+    }
+  }, [pricePerNight, totalNights, discount, form])
+
+  return null
+}
+
+// ============================================
+// UPDATED BOOKINGS COLLECTION
+// ============================================
+
+// collections/Bookings.ts
+import type { CollectionConfig } from 'payload'
+import type { Field } from 'payload'
+
+const assignedRoomNumberField: Field = {
+  name: 'assignedRoomNumber',
+  label: 'Assigned Room Number',
+  type: 'text',
+  admin: {
+    description: 'Select specific room number for this booking',
+    position: 'sidebar',
+    condition: (data) => !!data.room && data.status !== 'checked-out',
+    components: {
+      Field: {
+        path: '@/components/RoomNumberSelect#RoomNumberSelect',
+        clientProps: {},
+      },
+    },
+  },
+}
+
+export const Bookings: CollectionConfig<'bookings'> = {
+  slug: 'bookings',
+  admin: {
+    useAsTitle: 'bookingId',
+    defaultColumns: [
+      'bookingId',
+      'assignedRoomNumber',
+      'room',
+      'checkIn',
+      'checkOut',
+      'totalPrice',
+      'status',
+      'firstName',
+    ],
+    group: 'Core Operations',
+    description: 'Manage all guest reservations - both online and walk-in bookings',
+  },
+  access: {
+    create: () => true,
+    read: ({ req }) => {
+      return !!req.user
+    },
+  },
+
+  fields: [
+    {
+      name: 'bookingId',
+      type: 'text',
+      required: true,
+      unique: true,
+      admin: {
+        readOnly: true,
+        description: 'Auto-generated on save',
+      },
+    },
+
+    {
+      name: 'bookingSource',
+      label: 'Booking Source',
+      type: 'select',
+      options: [
+        { label: '🌐 Online Booking', value: 'online' },
+        { label: '🏨 Walk-in (Front Desk)', value: 'walkin' },
+        { label: '📞 Phone Reservation', value: 'phone' },
+      ],
+      defaultValue: 'online',
+      required: true,
+      admin: {
+        position: 'sidebar',
+        description: 'How was this booking made?',
+      },
+    },
+
+    {
+      type: 'collapsible',
+      label: 'Guest Information',
+      admin: {
+        initCollapsed: false,
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'firstName',
+              type: 'text',
+              required: true,
+              admin: { width: '50%' },
+            },
+            {
+              name: 'lastName',
+              type: 'text',
+              required: true,
+              admin: { width: '50%' },
+            },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'email',
+              type: 'email',
+              required: true,
+              admin: { width: '50%' },
+            },
+            {
+              name: 'phone',
+              type: 'text',
+              admin: {
+                width: '50%',
+                placeholder: '+234 XXX XXX XXXX',
+              },
+            },
+          ],
+        },
+        {
+          name: 'idType',
+          label: 'ID Type',
+          type: 'select',
+          options: [
+            { label: 'National ID', value: 'national-id' },
+            { label: 'International Passport', value: 'passport' },
+            { label: "Driver's License", value: 'drivers-license' },
+            { label: 'Other', value: 'other' },
+          ],
+          admin: {
+            description: 'For walk-in guests',
+          },
+        },
+        {
+          name: 'idNumber',
+          label: 'ID Number',
+          type: 'text',
+          admin: {
+            description: 'Optional but recommended for walk-ins',
+          },
+        },
+        {
+          name: 'specialRequests',
+          label: 'Special Requests / Notes',
+          type: 'textarea',
+          admin: {
+            rows: 3,
+            placeholder: 'Early check-in, extra pillows, dietary requirements, etc.',
+          },
+        },
+      ],
+    },
+
+    {
+      type: 'collapsible',
+      label: 'Room & Stay Details',
+      admin: {
+        initCollapsed: false,
+      },
+      fields: [
+        // Hidden field to trigger calculations
+        {
+          name: '_calculationTrigger',
+          type: 'ui',
+          admin: {
+            components: {
+              Field: '@/components/DateRangeCalculator#DateRangeCalculator',
+            },
+          },
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'room',
+              label: 'Room Type',
+              type: 'relationship',
+              relationTo: 'rooms',
+              required: true,
+              admin: {
+                description: 'Select the room category - price will auto-populate',
+                width: '60%',
+                components: {
+                  afterInput: [
+                    {
+                      path: '@/components/RoomSelector#RoomSelector',
+                      clientProps: { path: 'room' },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              name: 'guests',
+              type: 'number',
+              required: true,
+              defaultValue: 1,
+              min: 1,
+              max: 10,
+              admin: {
+                description: 'Number of guests',
+                width: '40%',
+              },
+            },
+          ],
+        },
+        assignedRoomNumberField as Field,
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'checkIn',
+              type: 'date',
+              required: true,
+              admin: {
+                description: 'Check-in date',
+                width: '50%',
+                date: {
+                  displayFormat: 'dd MMM yyyy',
+                },
+              },
+            },
+            {
+              name: 'checkOut',
+              type: 'date',
+              required: true,
+              admin: {
+                description: 'Check-out date',
+                width: '50%',
+                date: {
+                  displayFormat: 'dd MMM yyyy',
+                },
+              },
+            },
+          ],
+        },
+        {
+          name: 'totalNights',
+          type: 'number',
+          required: true,
+          admin: {
+            description: '✨ Calculated automatically from dates',
+            readOnly: true,
+          },
+        },
+      ],
+    },
+
+    {
+      type: 'collapsible',
+      label: 'Pricing Details',
+      admin: {
+        initCollapsed: false,
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'pricePerNight',
+              label: 'Price per Night (₦)',
+              type: 'number',
+              required: true,
+              admin: {
+                description: '✨ Auto-filled from room type (editable)',
+                width: '50%',
+              },
+            },
+            {
+              name: 'totalPrice',
+              label: 'Total Price (₦)',
+              type: 'number',
+              required: true,
+              admin: {
+                description: '✨ Calculated: (Price × Nights) - Discount',
+                width: '50%',
+                readOnly: true,
+              },
+            },
+          ],
+        },
+        {
+          name: 'discount',
+          label: 'Discount Amount (₦)',
+          type: 'number',
+          defaultValue: 0,
+          admin: {
+            description: 'Optional discount - total price updates automatically',
+            components: {
+              afterInput: [
+                {
+                  path: '@/components/PriceCalculator#PriceCalculator',
+                },
+              ],
+            },
+          },
+        },
+        {
+          name: 'paymentStatus',
+          label: 'Payment Status',
+          type: 'select',
+          options: [
+            { label: '💰 Paid in Full', value: 'paid' },
+            { label: '⏳ Deposit Paid', value: 'deposit' },
+            { label: '❌ Not Paid', value: 'unpaid' },
+          ],
+          defaultValue: 'unpaid',
+          admin: {
+            description: 'Track payment for walk-ins',
+          },
+        },
+        {
+          name: 'paymentMethod',
+          label: 'Payment Method',
+          type: 'select',
+          options: [
+            { label: 'Cash', value: 'cash' },
+            { label: 'Card (POS)', value: 'card' },
+            { label: 'Bank Transfer', value: 'transfer' },
+            { label: 'Online Payment', value: 'online' },
+          ],
+          admin: {
+            condition: (data) => data.paymentStatus !== 'unpaid',
+          },
+        },
+      ],
+    },
+
+    {
+      name: 'completedRoomNumber',
+      label: 'Room Number (Historical)',
+      type: 'text',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        condition: (data) => data.status === 'checked-out' && !!data.assignedRoomNumber,
+        description: 'The room number for this completed booking',
+        components: {
+          Field: {
+            path: '@/components/ReadOnlyRoomDisplay#ReadOnlyRoomDisplay',
+          },
+        },
+      },
+    },
+
+    {
+      name: 'status',
+      type: 'select',
+      options: [
+        { label: '⏳ Pending', value: 'pending' },
+        { label: '✅ Confirmed', value: 'confirmed' },
+        { label: '🔑 Checked In', value: 'checked-in' },
+        { label: '✔️ Checked Out', value: 'checked-out' },
+        { label: '❌ Cancelled', value: 'cancelled' },
+        { label: '🚫 No Show', value: 'no-show' },
+      ],
+      defaultValue: 'pending',
+      required: true,
+      admin: {
+        position: 'sidebar',
+        description: 'Current booking status',
+      },
+    },
+
+    {
+      name: 'actualCheckInTime',
+      label: 'Actual Check-in Time',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        condition: (data) => data.status === 'checked-in' || data.status === 'checked-out',
+        date: {
+          displayFormat: 'dd MMM yyyy HH:mm',
+        },
+      },
+    },
+    {
+      name: 'actualCheckOutTime',
+      label: 'Actual Check-out Time',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        condition: (data) => data.status === 'checked-out',
+        date: {
+          displayFormat: 'dd MMM yyyy HH:mm',
+        },
+      },
+    },
+
+    {
+      name: 'internalNotes',
+      label: 'Internal Notes (Staff Only)',
+      type: 'textarea',
+      admin: {
+        description: 'Private notes not visible to guests',
+        rows: 4,
+      },
+    },
+  ],
+
+  hooks: {
+    beforeChange: [
+      async ({ data, req, operation, originalDoc }) => {
+        console.log('beforeChange hook triggered for bookings collection')
+        
+        // Generate booking ID on create
+        if (operation === 'create') {
+          const year = new Date().getFullYear()
+          const existingCount = await req.payload.count({
+            collection: 'bookings',
+          })
+          const sequence = String(existingCount.totalDocs + 1).padStart(6, '0')
+          data.bookingId = `PAL-${year}-${sequence}`
+        }
+
+        // Backup: Auto-populate pricePerNight if not already set
+        if (data.room && !data.pricePerNight) {
+          try {
+            const room = await req.payload.findByID({
+              collection: 'rooms',
+              id: typeof data.room === 'string' ? data.room : data.room.id,
+            })
+            
+            if (room && typeof room === 'object' && 'pricePerNight' in room) {
+              data.pricePerNight = room.pricePerNight as number
+            }
+          } catch (error) {
+            req.payload.logger.error('Error fetching room for price:', error)
+          }
+        }
+
+        // Backup: Calculate nights if not already set
+        if (data.checkIn && data.checkOut && !data.totalNights) {
+          const checkIn = new Date(data.checkIn)
+          const checkOut = new Date(data.checkOut)
+          const timeDiff = checkOut.getTime() - checkIn.getTime()
+          const nights = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
+          data.totalNights = nights > 0 ? nights : 1
+        }
+
+        // Backup: Calculate total price if not already set
+        if (data.pricePerNight && data.totalNights && !data.totalPrice) {
+          data.totalPrice = data.pricePerNight * data.totalNights
+          if (data.discount && data.discount > 0) {
+            data.totalPrice -= data.discount
+          }
+        }
+
+        // Auto-populate actual check-in time
+        if (data.status === 'checked-in' && originalDoc?.status !== 'checked-in') {
+          data.actualCheckInTime = new Date().toISOString()
+          if (!data.assignedRoomNumber) {
+            throw new Error('Please assign a room number before checking in the guest.')
+          }
+          if (data.bookingSource === 'walkin' && data.paymentStatus === 'unpaid') {
+            req.payload.logger.warn('Walk-in guest checked in without payment recorded')
+          }
+        }
+
+        // Auto-populate actual check-out time
+        if (data.status === 'checked-out' && originalDoc?.status !== 'checked-out') {
+          data.actualCheckOutTime = new Date().toISOString()
+        }
+
+        return data
+      },
+    ],
+
+    afterChange: [
+      async ({ doc, req, operation }) => {
+        if (operation === 'create' && doc.bookingSource === 'walkin') {
+          req.payload.logger.info(`Walk-in booking created: ${doc.bookingId}`)
+        }
+      },
+    ],
+  },
+}
+
+
+
+// app/api/bookings/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { getPayload } from 'payload'
+import config from '@payload-config'
+import { format } from 'date-fns'
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const payload = await getPayload({ config })
+
+    // 1. Create booking in Payload
+    const booking = await payload.create({
+      collection: 'bookings',
+      data: body,
+    })
+
+    // 2. Fetch room details
+    const room = await payload.findByID({
+      collection: 'rooms',
+      id: body.room,
+    })
+
+    const checkInFormatted = format(new Date(body.checkIn), 'EEEE, MMMM d, yyyy')
+    const checkOutFormatted = format(new Date(body.checkOut), 'EEEE, MMMM d, yyyy')
+    const bookingId = booking.bookingId
+
+    // —————————————————————————————————————————————————————
+    // 3. Only send GUEST EMAIL for ONLINE bookings
+    // Skip for walk-in, phone, or admin-created bookings
+    // —————————————————————————————————————————————————————
+    const shouldEmailGuest = body.bookingSource === 'online'
+
+    if (shouldEmailGuest) {
+      try {
+        await payload.sendEmail({
+          from: `"Pallete Suites" <${process.env.SMTP_USER}>`,
+          to: body.email,
+          subject: `Booking Confirmed: ${room.name} – Pallete Suites`,
+          html: getGuestEmailHTML({
+            ...body,
+            bookingId,
+            roomName: room.name,
+            checkInFormatted,
+            checkOutFormatted,
+          }),
+        })
+        console.log(`✅ Guest confirmation email sent to ${body.email}`)
+      } catch (emailError) {
+        console.error('Failed to send guest email:', emailError)
+        // Don't fail the entire booking if email fails
+      }
+    } else {
+      console.log(
+        `ℹ️ Skipped guest email (booking source: ${body.bookingSource || 'admin'})`,
+      )
+    }
+
+    // —————————————————————————————————————————————————————
+    // 4. Always send STAFF NOTIFICATION (for all bookings)
+    // —————————————————————————————————————————————————————
+    const staffEmails = [
+      'awajimijandev@gmail.com',
+      // Add more as needed
+    ].filter(Boolean)
+
+    if (staffEmails.length > 0) {
+      try {
+        await payload.sendEmail({
+          from: `"New Booking Alert" <${process.env.SMTP_USER}>`,
+          to: staffEmails,
+          subject: `New Booking: ${room.name} – ${body.firstName} ${body.lastName}`,
+          html: getStaffEmailHTML({
+            ...body,
+            bookingId,
+            roomName: room.name,
+            checkInFormatted,
+            checkOutFormatted,
+          }),
+        })
+        console.log('✅ Staff notification sent')
+      } catch (emailError) {
+        console.error('Failed to send staff notification:', emailError)
+        // Don't fail the booking if notification fails
+      }
+    }
+
+    return NextResponse.json({ success: true, booking }, { status: 201 })
+  } catch (error: any) {
+    console.error('Booking failed:', error)
+    return NextResponse.json(
+      { error: 'Failed to process booking', details: error.message },
+      { status: 500 },
+    )
+  }
+}
+
+// —————————————————————————————
+// GUEST EMAIL TEMPLATE
+// —————————————————————————————
+function getGuestEmailHTML({
+  firstName,
+  roomName,
+  checkInFormatted,
+  checkOutFormatted,
+  guests,
+  totalNights,
+  totalPrice,
+  bookingId,
+}: any) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 30px; background: #0f0f0f; color: #f0f0f0; border-radius: 16px;">
+        <h1 style="font-family:'Libre Baskerville',serif;color:#d4af37;font-size:38px;font-weight:400;margin:0 0 16px;letter-spacing:2px;">
+        ${firstName}, your suite is confirmed
+      </h1>
+      <p style="font-size:18px;color:#d4af37;opacity:0.9;margin:0 0 50px;text-align:center;">
+        We look forward to welcoming you
+      </p>
+
+      <!-- Booking Reference – The Star -->
+      <div style="background:#0f0a05;padding:30px;border:2px solid #d4af37;border-radius:16px;text-align:center;margin:40px 0;">
+        <p style="margin:0;font-size:14px;color:#d4af37;text-transform:uppercase;letter-spacing:3px;">
+          Reservation Number
+        </p>
+        <p style="margin:12px 0 0;font-size:36px;font-family:monospace;color:#d4af37;letter-spacing:6px;">
+          ${bookingId}
+        </p>
+      </div>
+      
+      <div style="background: #1a1a1a; padding: 24px; border-radius: 12px; margin: 24px 0;">
+        <h2 style="color: #D4AF37; margin: 0 0 16px;">Booking Details</h2>
+        <p><strong>Room:</strong> ${roomName}</p>
+        <p><strong>Check-in:</strong> ${checkInFormatted}</p>
+        <p><strong>Check-out:</strong> ${checkOutFormatted}</p>
+        <p><strong>Guests:</strong> ${guests}</p>
+        <p><strong>Duration:</strong> ${totalNights} night${totalNights > 1 ? 's' : ''}</p>
+        <p style="font-size: 20px; color: #D4AF37; margin-top: 20px;"><strong>Total: ₦${totalPrice?.toLocaleString()}</strong></p>
+      </div>
+
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="https://palletesuites.com/my-bookings" style="background: #D4AF37; color: #121212; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Your Booking</a>
+      </div>
+
+      <p style="text-align: center; color: #999; font-size: 14px;">
+        Questions? Reply or call +234 812 345 6789<br>
+        © 2025 Pallete Suites. A legacy since 1928.
+      </p>
+    </div>
+  `
+}
+
+// —————————————————————————————
+// STAFF NOTIFICATION TEMPLATE
+// —————————————————————————————
+function getStaffEmailHTML({
+  firstName,
+  lastName,
+  email,
+  phone,
+  roomName,
+  checkInFormatted,
+  checkOutFormatted,
+  guests,
+  totalNights,
+  totalPrice,
+  bookingId,
+  bookingSource,
+}: any) {
+  // Display source badge
+  const sourceBadges = {
+    online: '🌐 Online Booking',
+    walkin: '🏨 Walk-in',
+    phone: '📞 Phone Reservation',
+  }
+  const sourceLabel = sourceBadges[bookingSource] || '📝 Manual Booking'
+
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 30px; background: #ffffff; border: 2px solid #D4AF37; border-radius: 12px;">
+      <h1 style="color:#8b2d4a;font-size:30px;margin:0 0 16px;text-align:center;">
+        New Reservation
+      </h1>
+      
+      <div style="text-align:center;margin-bottom:24px;">
+        <span style="background:#f0f0f0;padding:8px 16px;border-radius:20px;font-size:14px;color:#333;">
+          ${sourceLabel}
+        </span>
+      </div>
+
+      <div style="background:#fff8e1;padding:20px;border-radius:12px;text-align:center;border:2px dashed #d4af37;margin:32px 0;">
+        <p style="margin:0;font-size:14px;color:#92400e;text-transform:uppercase;letter-spacing:2px;">
+          Booking ID
+        </p>
+        <p style="margin:10px 0 0;font-size:32px;font-family:monospace;color:#92400e;letter-spacing:4px;">
+          ${bookingId}
+        </p>
+      </div>
+      
+      <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <p><strong>Guest:</strong> ${firstName} ${lastName}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+        <hr style="border: 1px dashed #ddd; margin: 16px 0;">
+        <p><strong>Room:</strong> ${roomName}</p>
+        <p><strong>Check-in:</strong> ${checkInFormatted}</p>
+        <p><strong>Check-out:</strong> ${checkOutFormatted}</p>
+        <p><strong>Guests:</strong> ${guests}</p>
+        <p><strong>Duration:</strong> ${totalNights} night${totalNights > 1 ? 's' : ''}</p>
+        <p style="font-size: 18px; color: #D4AF37;"><strong>Total Amount: ₦${totalPrice?.toLocaleString()}</strong></p>
+      </div>
+
+      <div style="text-align: center; margin-top: 24px;">
+        <a href="http://localhost:3000/admin/collections/bookings" 
+           style="background: #121212; color: #D4AF37; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+          View in Admin Panel
+        </a>
+      </div>
+
+      <p style="text-align: center; color: #666; font-size: 12px; margin-top: 30px;">
+        This is an automated alert from Pallete Suites booking system.
+      </p>
+    </div>
+  `
+}
+
+
+
+
+// collections/Bookings.ts - Add this to your afterChange hooks
+
+import { format } from 'date-fns'
+
+// ... your existing collection config ...
+
+hooks: {
+  beforeChange: [
+    // ... your existing beforeChange hooks ...
+  ],
+
+  afterChange: [
+    async ({ doc, req, operation }) => {
+      // Only send emails on create
+      if (operation !== 'create') return
+
+      // Log walk-in bookings for reporting
+      if (doc.bookingSource === 'walkin') {
+        req.payload.logger.info(`Walk-in booking created: ${doc.bookingId}`)
+      }
+
+      // Send emails after booking is created
+      try {
+        // Fetch room details
+        const room = await req.payload.findByID({
+          collection: 'rooms',
+          id: typeof doc.room === 'string' ? doc.room : doc.room.id,
+        })
+
+        const checkInFormatted = format(new Date(doc.checkIn), 'EEEE, MMMM d, yyyy')
+        const checkOutFormatted = format(new Date(doc.checkOut), 'EEEE, MMMM d, yyyy')
+
+        // —————————————————————————————————————————————————————
+        // Send GUEST EMAIL only for ONLINE bookings
+        // —————————————————————————————————————————————————————
+        const shouldEmailGuest = doc.bookingSource === 'online'
+
+        if (shouldEmailGuest) {
+          try {
+            await req.payload.sendEmail({
+              from: `"Pallete Suites" <${process.env.SMTP_USER}>`,
+              to: doc.email,
+              subject: `Booking Confirmed: ${room.name} – Pallete Suites`,
+              html: getGuestEmailHTML({
+                firstName: doc.firstName,
+                lastName: doc.lastName,
+                roomName: room.name,
+                checkInFormatted,
+                checkOutFormatted,
+                guests: doc.guests,
+                totalNights: doc.totalNights,
+                totalPrice: doc.totalPrice,
+                bookingId: doc.bookingId,
+              }),
+            })
+            req.payload.logger.info(`✅ Guest confirmation email sent to ${doc.email}`)
+          } catch (emailError) {
+            req.payload.logger.error('Failed to send guest email:', emailError)
+          }
+        } else {
+          req.payload.logger.info(
+            `ℹ️ Skipped guest email (booking source: ${doc.bookingSource || 'not set'})`,
+          )
+        }
+
+        // —————————————————————————————————————————————————————
+        // Always send STAFF NOTIFICATION
+        // —————————————————————————————————————————————————————
+        const staffEmails = [
+          'awajimijandev@gmail.com',
+          // Add more as needed
+        ].filter(Boolean)
+
+        if (staffEmails.length > 0) {
+          try {
+            await req.payload.sendEmail({
+              from: `"New Booking Alert" <${process.env.SMTP_USER}>`,
+              to: staffEmails,
+              subject: `New Booking: ${room.name} – ${doc.firstName} ${doc.lastName}`,
+              html: getStaffEmailHTML({
+                firstName: doc.firstName,
+                lastName: doc.lastName,
+                email: doc.email,
+                phone: doc.phone,
+                roomName: room.name,
+                checkInFormatted,
+                checkOutFormatted,
+                guests: doc.guests,
+                totalNights: doc.totalNights,
+                totalPrice: doc.totalPrice,
+                bookingId: doc.bookingId,
+                bookingSource: doc.bookingSource,
+              }),
+            })
+            req.payload.logger.info('✅ Staff notification sent')
+          } catch (emailError) {
+            req.payload.logger.error('Failed to send staff notification:', emailError)
+          }
+        }
+      } catch (error) {
+        req.payload.logger.error('Error in afterChange email hook:', error)
+        // Don't throw - we don't want to fail the booking if emails fail
+      }
+    },
+  ],
+}
+
+// —————————————————————————————
+// EMAIL TEMPLATES (same as before)
+// —————————————————————————————
+function getGuestEmailHTML({
+  firstName,
+  roomName,
+  checkInFormatted,
+  checkOutFormatted,
+  guests,
+  totalNights,
+  totalPrice,
+  bookingId,
+}: any) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 30px; background: #0f0f0f; color: #f0f0f0; border-radius: 16px;">
+        <h1 style="font-family:'Libre Baskerville',serif;color:#d4af37;font-size:38px;font-weight:400;margin:0 0 16px;letter-spacing:2px;">
+        ${firstName}, your suite is confirmed
+      </h1>
+      <p style="font-size:18px;color:#d4af37;opacity:0.9;margin:0 0 50px;text-align:center;">
+        We look forward to welcoming you
+      </p>
+
+      <div style="background:#0f0a05;padding:30px;border:2px solid #d4af37;border-radius:16px;text-align:center;margin:40px 0;">
+        <p style="margin:0;font-size:14px;color:#d4af37;text-transform:uppercase;letter-spacing:3px;">
+          Reservation Number
+        </p>
+        <p style="margin:12px 0 0;font-size:36px;font-family:monospace;color:#d4af37;letter-spacing:6px;">
+          ${bookingId}
+        </p>
+      </div>
+      
+      <div style="background: #1a1a1a; padding: 24px; border-radius: 12px; margin: 24px 0;">
+        <h2 style="color: #D4AF37; margin: 0 0 16px;">Booking Details</h2>
+        <p><strong>Room:</strong> ${roomName}</p>
+        <p><strong>Check-in:</strong> ${checkInFormatted}</p>
+        <p><strong>Check-out:</strong> ${checkOutFormatted}</p>
+        <p><strong>Guests:</strong> ${guests}</p>
+        <p><strong>Duration:</strong> ${totalNights} night${totalNights > 1 ? 's' : ''}</p>
+        <p style="font-size: 20px; color: #D4AF37; margin-top: 20px;"><strong>Total: ₦${totalPrice?.toLocaleString()}</strong></p>
+      </div>
+
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="https://palletesuites.com/my-bookings" style="background: #D4AF37; color: #121212; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Your Booking</a>
+      </div>
+
+      <p style="text-align: center; color: #999; font-size: 14px;">
+        Questions? Reply or call +234 812 345 6789<br>
+        © 2025 Pallete Suites. A legacy since 1928.
+      </p>
+    </div>
+  `
+}
+
+function getStaffEmailHTML({
+  firstName,
+  lastName,
+  email,
+  phone,
+  roomName,
+  checkInFormatted,
+  checkOutFormatted,
+  guests,
+  totalNights,
+  totalPrice,
+  bookingId,
+  bookingSource,
+}: any) {
+  const sourceBadges = {
+    online: '🌐 Online Booking',
+    walkin: '🏨 Walk-in',
+    phone: '📞 Phone Reservation',
+  }
+  const sourceLabel = sourceBadges[bookingSource] || '📝 Manual Booking'
+
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 30px; background: #ffffff; border: 2px solid #D4AF37; border-radius: 12px;">
+      <h1 style="color:#8b2d4a;font-size:30px;margin:0 0 16px;text-align:center;">
+        New Reservation
+      </h1>
+      
+      <div style="text-align:center;margin-bottom:24px;">
+        <span style="background:#f0f0f0;padding:8px 16px;border-radius:20px;font-size:14px;color:#333;">
+          ${sourceLabel}
+        </span>
+      </div>
+
+      <div style="background:#fff8e1;padding:20px;border-radius:12px;text-align:center;border:2px dashed #d4af37;margin:32px 0;">
+        <p style="margin:0;font-size:14px;color:#92400e;text-transform:uppercase;letter-spacing:2px;">
+          Booking ID
+        </p>
+        <p style="margin:10px 0 0;font-size:32px;font-family:monospace;color:#92400e;letter-spacing:4px;">
+          ${bookingId}
+        </p>
+      </div>
+      
+      <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <p><strong>Guest:</strong> ${firstName} ${lastName}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+        <hr style="border: 1px dashed #ddd; margin: 16px 0;">
+        <p><strong>Room:</strong> ${roomName}</p>
+        <p><strong>Check-in:</strong> ${checkInFormatted}</p>
+        <p><strong>Check-out:</strong> ${checkOutFormatted}</p>
+        <p><strong>Guests:</strong> ${guests}</p>
+        <p><strong>Duration:</strong> ${totalNights} night${totalNights > 1 ? 's' : ''}</p>
+        <p style="font-size: 18px; color: #D4AF37;"><strong>Total Amount: ₦${totalPrice?.toLocaleString()}</strong></p>
+      </div>
+
+      <div style="text-align: center; margin-top: 24px;">
+        <a href="http://localhost:3000/admin/collections/bookings/${bookingId}" 
+           style="background: #121212; color: #D4AF37; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+          View in Admin Panel
+        </a>
+      </div>
+
+      <p style="text-align: center; color: #666; font-size: 12px; margin-top: 30px;">
+        This is an automated alert from Pallete Suites booking system.
+      </p>
+    </div>
+  `
+}
+
+
+{
+  name: 'bookingSource',
+  type: 'text',
+  admin: {
+    readOnly: true,
+    position: 'sidebar',
+  },
+  hooks: {
+    beforeChange: [
+      ({ data, req, operation }) => {
+        if (operation === 'create' && req.headers.get('referer')?.includes('/admin')) {
+          data.bookingSource = 'walkin'
+        }
+        return data
+      }
+    ]
+  }
+}
+
+
+
+// collections/Bookings.ts
+
+export const Bookings: CollectionConfig<'bookings'> = {
+  // ... your existing config
+
+  fields: [
+    // 1. bookingSource — auto-set to "walkin" in admin, read-only
+    {
+      name: 'bookingSource',
+      label: 'Booking Source',
+      type: 'select',
+      options: [
+        { label: 'Online Booking', value: 'online' },
+        { label: 'Walk-in (Front Desk)', value: 'walkin' },
+        { label: 'Phone Reservation', value: 'phone' },
+      ],
+      defaultValue: 'online', // fallback for API/frontend
+      required: true,
+      admin: {
+        position: 'sidebar',
+        description: 'Automatically set to Walk-in when created from admin dashboard',
+        readOnly: true, // ← Prevents manual change
+        // Hide in create form (still visible in edit)
+        condition: () => false, // hides field completely in create form
+      },
+    },
+
+    // ... other fields
+
+    // 2. Status field — disable "checked-in" if no room number
+    {
+      name: 'status',
+      type: 'select',
+      options: [
+        { label: 'Pending', value: 'pending' },
+        { label: 'Confirmed', value: 'confirmed' },
+        { label: 'Checked In', value: 'checked-in' },
+        { label: 'Checked Out', value: 'checked-out' },
+        { label: 'Cancelled', value: 'cancelled' },
+        { label: 'No Show', value: 'no-show' },
+      ],
+      defaultValue: 'pending',
+      required: true,
+      admin: {
+        position: 'sidebar',
+        description: 'Current booking status',
+        // Dynamically disable "checked-in" if no room number
+        components: {
+          Field: '@/components/StatusWithRoomCheck#StatusWithRoomCheck',
+        },
+      },
+    },
+
+    // ... rest of fields
+  ],
+
+  hooks: {
+    beforeChange: [
+      async ({ data, req, operation, originalDoc }) => {
+        // 1. Auto-set bookingSource to "walkin" when created from admin
+        if (operation === 'create') {
+          // Detect if request comes from Payload admin UI
+          const isAdminRequest = req.headers.get('x-payload-admin') === 'true' ||
+                                req.headers.get('referer')?.includes('/admin') ||
+                                req.user?.collection === 'users' // admin user
+
+          if (isAdminRequest) {
+            data.bookingSource = 'walkin'
+          }
+        }
+
+        // 2. Prevent status → checked-in without room number
+        if (data.status === 'checked-in' && originalDoc?.status !== 'checked-in') {
+          if (!data.assignedRoomNumber) {
+            throw new Error('Cannot check in guest without assigning a room number.')
+          }
+          data.actualCheckInTime = new Date().toISOString()
+        }
+
+        // ... your existing logic (bookingId, price, nights, etc.)
+      },
+    ],
+  },
+}
+
+// In your Bookings collection fields array
+{
+  type: 'row',
+  fields: [
+    {
+      name: 'room',
+      label: 'Room Type',
+      type: 'relationship',
+      relationTo: 'rooms',
+      required: true,
+      maxDepth: 1,
+      admin: {
+        description: 'Select the room category - price will auto-populate',
+        width: '60%',
+      },
+    },
+    {
+      name: 'pricePerNight',
+      label: 'Price per Night (₦)',
+      type: 'number',
+      required: true,
+      admin: {
+        description: '✨ Auto-filled from room type (editable)',
+        width: '50%',
+      },
+    },
+  ],
+},
+{
+  name: '_priceLoader',
+  type: 'ui',
+  admin: {
+    components: {
+      Field: {
+        path: '@/components/AutoPriceField#AutoPriceField',
+        clientProps: {
+          roomFieldPath: 'room',
+          priceFieldPath: 'pricePerNight'
+        }
+      }
+    }
+  }
+},

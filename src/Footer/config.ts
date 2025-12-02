@@ -7,6 +7,9 @@ export const Footer: GlobalConfig = {
   access: {
     read: () => true,
   },
+  admin: {
+    group: 'Site Configuration',
+  },
   fields: [
     {
       name: 'description',
@@ -16,11 +19,11 @@ export const Footer: GlobalConfig = {
     },
 
     {
-      name:'title',
-      type:'text',
-      label:'Company Name',
-      required:true,
-      defaultValue:'Sunlink Energies'
+      name: 'title',
+      type: 'text',
+      label: 'Company Name',
+      required: true,
+      defaultValue: 'Sunlink Energies',
     },
     {
       name: 'quickLinks',
@@ -67,12 +70,11 @@ export const Footer: GlobalConfig = {
       ],
     },
     {
-      name:'copyright',
-      label:'Copr right section',
-      type:'textarea',
-      defaultValue:'2025 Sunlink. All rights reserved'
-    }
-
+      name: 'copyright',
+      label: 'Copr right section',
+      type: 'textarea',
+      defaultValue: '2025 Sunlink. All rights reserved',
+    },
   ],
   hooks: {
     afterChange: [revalidateFooter],

@@ -28,6 +28,7 @@ import { Bookings } from './collections/Bookings'
 import { Inquiries } from './collections/Inquiries'
 import { HotelAmenities } from './globals/HotelAmenities'
 import { BusinessLocation } from './globals/BusinessLocation'
+import { Notifications } from './collections/Notifications'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -81,7 +82,7 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || '',
     },
   }),
-  collections: [Pages, Media, Categories, Users, Blogs, Rooms, Faqs, Bookings, Inquiries],
+  collections: [Pages, Media, Categories, Users, Blogs, Rooms, Faqs, Bookings, Inquiries, Notifications],
 
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer, ContactInfo, HotelAmenities, BusinessLocation],

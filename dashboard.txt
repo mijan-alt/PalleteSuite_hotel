@@ -1,0 +1,763 @@
+// ============================================
+// 1. SERVER COMPONENT - Main Dashboard Page
+// src/components/admin/CustomDashboard/index.tsx
+// ============================================
+import React from 'react'
+import { Gutter } from '@payloadcms/ui'
+import { DashboardHeader } from './DashboardHeader'
+import { MetricsGrid } from './MetricsGrid'
+import { SuiteAvailability } from './SuiteAvailability'
+import { RecentActivities } from './RecentActivities'
+import { GuestRating } from './GuestRating'
+import { TasksList } from './TasksList'
+import { QuickActions } from './QuickActions'
+
+// Fetch data on the server
+async function getDashboardData() {
+  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
+  
+  try {
+    const [metricsRes, availabilityRes, activitiesRes] = await Promise.all([
+      fetch(`${baseUrl}/api/bookings/metrics`, { 
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' }
+      }),
+      fetch(`${baseUrl}/api/rooms/availability`, { 
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' }
+      }),
+      fetch(`${baseUrl}/api/recent-activities`, { 
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' }
+      }),
+    ])
+
+    const [metrics, availability, activities] = await Promise.all([
+      metricsRes.ok ? metricsRes.json() : null,
+      availabilityRes.ok ? availabilityRes.json() : null,
+      activitiesRes.ok ? activitiesRes.json() : null,
+    ])
+
+    return { metrics, availability, activities: activities?.activities || [] }
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error)
+    return { metrics: null, availability: null, activities: [] }
+  }
+}
+
+export default async function CustomDashboard() {
+  const data = await getDashboardData()
+
+  return (
+    <Gutter className="min-h-screen bg-gray-50">
+      <DashboardHeader />
+
+      <div className="space-y-8">
+        <MetricsGrid metrics={data.metrics} />
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Left Column */}
+          <div className="xl:col-span-2 space-y-8">
+            <SuiteAvailability availability={data.availability} />
+            <RecentActivities activities={data.activities} />
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-8">
+            <GuestRating />
+            <TasksList />
+            <QuickActions />
+          </div>
+        </div>
+      </div>
+    </Gutter>
+  )
+}
+
+// ============================================
+// 2. DashboardHeader Component (Client)
+// src/components/admin/CustomDashboard/DashboardHeader.tsx
+// ============================================
+'use client'
+import React from 'react'
+import { useAuth } from '@payloadcms/ui'
+
+export function DashboardHeader() {
+  const { user } = useAuth()
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Welcome back,{' '}
+            <span className="font-medium">{user?.name?.split(' ')[0] || 'Administrator'}</span>
+          </p>
+        </div>
+        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span className="text-sm font-medium text-green-700">All systems operational</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// 3. MetricsGrid Component (Server)
+// src/components/admin/CustomDashboard/MetricsGrid.tsx
+// ============================================
+import React from 'react'
+import { MetricCard } from './MetricCard'
+import { Box, CircleArrowOutDownRight, CircleArrowOutUpRight } from 'lucide-react'
+
+interface MetricsGridProps {
+  metrics: {
+    newBookings: number
+    newBookingsChange: number
+    checkIns: number
+    checkInsChange: number
+    checkOuts: number
+    checkOutsChange: number
+    totalRevenue: number
+    totalRevenueChange: number
+  } | null
+}
+
+export function MetricsGrid({ metrics }: MetricsGridProps) {
+  if (!metrics) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse">
+            <div className="h-12 bg-gray-200 rounded mb-4"></div>
+            <div className="h-8 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded"></div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <MetricCard
+        title="New Bookings"
+        value={metrics.newBookings}
+        change={metrics.newBookingsChange}
+        icon={<Box className="w-5 h-5 text-blue-600" />}
+        iconBg="bg-blue-100"
+      />
+      <MetricCard
+        title="Check-Ins"
+        value={metrics.checkIns}
+        change={metrics.checkInsChange}
+        icon={<CircleArrowOutDownRight className="w-5 h-5 text-green-600" />}
+        iconBg="bg-green-100"
+      />
+      <MetricCard
+        title="Check-Outs"
+        value={metrics.checkOuts}
+        change={metrics.checkOutsChange}
+        icon={<CircleArrowOutUpRight className="w-5 h-5 text-red-600" />}
+        iconBg="bg-red-100"
+      />
+      <MetricCard
+        title="Total Revenue"
+        value={formatCurrency(metrics.totalRevenue)}
+        change={metrics.totalRevenueChange}
+        icon={<span className="text-xl font-bold text-purple-600">₦</span>}
+        iconBg="bg-purple-100"
+      />
+    </div>
+  )
+}
+
+// ============================================
+// 4. MetricCard Component (Server)
+// src/components/admin/CustomDashboard/MetricCard.tsx
+// ============================================
+import React from 'react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
+
+interface MetricCardProps {
+  title: string
+  value: string | number
+  change: number
+  icon: React.ReactNode
+  iconBg: string
+}
+
+export function MetricCard({ title, value, change, icon, iconBg }: MetricCardProps) {
+  const isPositive = change >= 0
+  const absChange = Math.abs(change)
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`p-2.5 ${iconBg} rounded-lg`}>{icon}</div>
+      </div>
+      <p className="text-sm font-medium text-gray-600">{title}</p>
+      <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
+      <div className="flex items-center gap-1 mt-2 text-xs">
+        <div className="flex items-center gap-1 text-sm font-medium">
+          {isPositive ? (
+            <TrendingUp className="w-4 h-4 text-green-600" />
+          ) : (
+            <TrendingDown className="w-4 h-4 text-red-600" />
+          )}
+          <span className={isPositive ? 'text-green-600' : 'text-red-600'}>
+            {absChange.toFixed(1)}%
+          </span>
+        </div>
+        <span className="text-gray-500">vs last week</span>
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// 5. SuiteAvailability Component (Server)
+// src/components/admin/CustomDashboard/SuiteAvailability.tsx
+// ============================================
+import React from 'react'
+import Link from 'next/link'
+import { Clock, Bed } from 'lucide-react'
+
+interface SuiteAvailabilityProps {
+  availability: {
+    summary: {
+      total: number
+      occupied: number
+      reserved: number
+      available: number
+      cleaning: number
+    }
+    byRoomType: Array<{
+      roomName: string
+      roomType: string
+      totalUnits: number
+      occupied: number
+      reserved: number
+      available: number
+    }>
+    sampleBookings: {
+      occupied: Array<{ roomNumber: string; guestName: string; roomName: string; checkOut: string }>
+      reserved: Array<{ roomNumber: string; guestName: string; roomName: string; checkIn: string }>
+    }
+  } | null
+}
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  const today = new Date()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  if (date.toDateString() === today.toDateString()) return 'Today'
+  if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow'
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+export function SuiteAvailability({ availability }: SuiteAvailabilityProps) {
+  if (!availability) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+        <div className="py-10 text-center text-gray-500">
+          <Clock className="w-5 h-5 inline-block animate-spin mr-2" />
+          Loading availability...
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-lg font-bold text-gray-900">Suite Availability</h2>
+        <Link
+          href="/admin/collections/bookings"
+          className="text-sm font-medium text-blue-600 hover:text-blue-700"
+        >
+          All bookings →
+        </Link>
+      </div>
+
+      {/* Visual Bar */}
+      <div className="mb-6">
+        <div className="h-16 rounded-xl overflow-hidden border border-gray-200 flex">
+          {availability.summary.occupied > 0 && (
+            <div className="bg-red-400" style={{ flex: availability.summary.occupied }} />
+          )}
+          {availability.summary.reserved > 0 && (
+            <div className="bg-green-400" style={{ flex: availability.summary.reserved }} />
+          )}
+          {availability.summary.available > 0 && (
+            <div className="bg-gray-300" style={{ flex: availability.summary.available }} />
+          )}
+          {availability.summary.cleaning > 0 && (
+            <div className="bg-amber-400" style={{ flex: availability.summary.cleaning }} />
+          )}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        {[
+          { label: 'Occupied', value: availability.summary.occupied, color: 'bg-red-400' },
+          { label: 'Reserved', value: availability.summary.reserved, color: 'bg-green-400' },
+          { label: 'Available', value: availability.summary.available, color: 'bg-gray-300' },
+          { label: 'Cleaning', value: availability.summary.cleaning, color: 'bg-amber-400' },
+        ].map((stat) => (
+          <div key={stat.label}>
+            <div className="flex items-center gap-2 mb-1">
+              <div className={`w-3 h-3 ${stat.color} rounded-full`}></div>
+              <span className="text-xs text-gray-600">{stat.label}</span>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Sample Bookings */}
+      <div className="space-y-3">
+        {availability.sampleBookings.occupied.map((b, i) => (
+          <div
+            key={`occ-${i}`}
+            className="flex items-center justify-between p-4 bg-red-50 rounded-xl border border-red-200"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center font-semibold text-sm border border-gray-200">
+                {b.roomNumber}
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 text-sm">{b.guestName}</p>
+                <p className="text-xs text-gray-600">{b.roomName}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                Occupied
+              </span>
+              <p className="text-xs text-red-600 mt-1">Departs: {formatDate(b.checkOut)}</p>
+            </div>
+          </div>
+        ))}
+
+        {availability.sampleBookings.reserved.map((b, i) => (
+          <div
+            key={`res-${i}`}
+            className="flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-200"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center font-semibold text-sm border border-gray-200">
+                {b.roomNumber}
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 text-sm">{b.guestName}</p>
+                <p className="text-xs text-gray-600">{b.roomName}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                Reserved
+              </span>
+              <p className="text-xs text-green-600 mt-1">Arrives: {formatDate(b.checkIn)}</p>
+            </div>
+          </div>
+        ))}
+
+        {availability.sampleBookings.occupied.length === 0 &&
+          availability.sampleBookings.reserved.length === 0 &&
+          availability.summary.available > 0 && (
+            <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
+              <Bed className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-lg font-semibold text-gray-700">
+                {availability.summary.available} rooms available
+              </p>
+              <p className="text-sm text-gray-500">No current bookings</p>
+            </div>
+          )}
+      </div>
+
+      {/* Room Type Breakdown */}
+      <div className="mt-6 pt-6 border-t border-gray-200">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">By Room Type</h3>
+        <div className="space-y-2">
+          {availability.byRoomType.map((room, i) => (
+            <div key={i} className="flex items-center justify-between text-sm">
+              <span className="text-gray-700 font-medium">{room.roomName}</span>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="text-red-600">{room.occupied} occ.</span>
+                <span className="text-green-600">{room.reserved} res.</span>
+                <span className="text-gray-700 font-semibold">{room.available} avail.</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// 6. RecentActivities Component (Server)
+// src/components/admin/CustomDashboard/RecentActivities.tsx
+// ============================================
+import React from 'react'
+import Link from 'next/link'
+import { LogOut, LogIn, Calendar, MessageSquare } from 'lucide-react'
+
+interface Activity {
+  id: string
+  time: string
+  description: string
+  detail: string
+  iconType: 'check-out' | 'check-in' | 'new-booking' | 'inquiry'
+}
+
+interface RecentActivitiesProps {
+  activities: Activity[]
+}
+
+const getActivityIcon = (iconType: Activity['iconType']) => {
+  const iconProps = { size: 18, strokeWidth: 2 }
+  switch (iconType) {
+    case 'check-out':
+      return <LogOut {...iconProps} className="text-red-600" />
+    case 'check-in':
+      return <LogIn {...iconProps} className="text-green-600" />
+    case 'new-booking':
+      return <Calendar {...iconProps} className="text-blue-600" />
+    case 'inquiry':
+      return <MessageSquare {...iconProps} className="text-amber-600" />
+    default:
+      return <Calendar {...iconProps} className="text-blue-600" />
+  }
+}
+
+export function RecentActivities({ activities }: RecentActivitiesProps) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-lg font-bold text-gray-900">Recent Activities</h2>
+        <Link
+          href="/admin/collections/bookings"
+          className="text-sm font-medium text-blue-600 hover:text-blue-700"
+        >
+          View all
+        </Link>
+      </div>
+      <div className="space-y-2">
+        {activities.length === 0 ? (
+          <div className="py-8 text-center text-gray-500">No recent activities</div>
+        ) : (
+          activities.map((activity) => (
+            <div
+              key={activity.id}
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center">
+                {getActivityIcon(activity.iconType)}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900">{activity.description}</p>
+                <p className="text-xs text-gray-600">{activity.detail}</p>
+              </div>
+              <span className="text-xs text-gray-500 font-medium">{activity.time}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Continue with remaining components in next message...
+
+
+// ============================================
+// 7. GuestRating Component (Server)
+// src/components/admin/CustomDashboard/GuestRating.tsx
+// ============================================
+import React from 'react'
+import { Star, MoreVertical } from 'lucide-react'
+
+export function GuestRating() {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-lg font-bold text-gray-900">Guest Rating</h2>
+        <button className="text-gray-400 hover:text-gray-600">
+          <MoreVertical className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="text-center mb-6">
+        <div className="text-5xl font-bold text-gray-900">
+          4.6<span className="text-2xl text-gray-400">/5</span>
+        </div>
+        <div className="flex justify-center gap-1 mt-2">
+          {[...Array(5)].map((_, i) => (
+            <Star
+              key={i}
+              className={`w-5 h-5 ${i < 4 ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
+            />
+          ))}
+        </div>
+        <p className="text-sm text-gray-600 mt-1">from 254 reviews</p>
+      </div>
+      <div className="space-y-3">
+        {[
+          { label: 'Cleanliness', value: 4.7 },
+          { label: 'Comfort', value: 4.8 },
+          { label: 'Service', value: 4.6 },
+          { label: 'Location', value: 4.5 },
+        ].map((item) => (
+          <div key={item.label}>
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-gray-600">{item.label}</span>
+              <span className="font-semibold text-gray-900">{item.value}</span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-amber-400 rounded-full"
+                style={{ width: `${(item.value / 5) * 100}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// 8. TasksList Component (Server)
+// src/components/admin/CustomDashboard/TasksList.tsx
+// ============================================
+import React from 'react'
+import { Plus, MoreVertical } from 'lucide-react'
+
+export function TasksList() {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-lg font-bold text-gray-900">Tasks</h2>
+        <button className="w-8 h-8 bg-amber-400 hover:bg-amber-500 rounded-lg flex items-center justify-center text-white transition-colors">
+          <Plus className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="space-y-3">
+        {[
+          { date: 'June 17', title: 'Set Up Conference Room B' },
+          { date: 'June 17', title: 'Restock 3rd Floor Supplies' },
+          { date: 'June 20', title: 'Pool Area Inspection' },
+        ].map((task, i) => (
+          <div
+            key={i}
+            className="p-3 bg-gray-50 rounded-xl border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer group"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600">{task.date}</p>
+                <p className="font-medium text-gray-900 mt-0.5">{task.title}</p>
+              </div>
+              <button className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreVertical className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// 9. QuickActions Component (Server)
+// src/components/admin/CustomDashboard/QuickActions.tsx
+// ============================================
+import React from 'react'
+import Link from 'next/link'
+import { Calendar, AlertCircle, MessageSquare } from 'lucide-react'
+
+export function QuickActions() {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+      <h2 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h2>
+      <div className="space-y-3">
+        <Link
+          href="/admin/collections/bookings/create"
+          className="flex items-center gap-3 p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+        >
+          <Calendar className="w-5 h-5" />
+          <span className="font-medium">New Booking</span>
+        </Link>
+
+        <Link
+          href="/admin/collections/bookings?where[status][equals]=pending"
+          className="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-200 hover:bg-amber-100 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600" />
+            <span className="font-medium text-gray-900">Pending Bookings</span>
+          </div>
+          <div className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+            7
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/collections/inquiries"
+          className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 hover:bg-gray-100 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <MessageSquare className="w-5 h-5 text-gray-600" />
+            <span className="font-medium text-gray-900">Inquiries</span>
+          </div>
+          <div className="w-6 h-6 bg-gray-400 text-white rounded-full flex items-center justify-center text-xs font-bold">
+            4
+          </div>
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+// ============================================
+// 10. Types File (Optional but recommended)
+// src/components/admin/CustomDashboard/types.ts
+// ============================================
+export interface BookingMetrics {
+  newBookings: number
+  newBookingsChange: number
+  checkIns: number
+  checkInsChange: number
+  checkOuts: number
+  checkOutsChange: number
+  totalRevenue: number
+  totalRevenueChange: number
+}
+
+export interface RoomAvailability {
+  summary: {
+    total: number
+    occupied: number
+    reserved: number
+    available: number
+    cleaning: number
+  }
+  byRoomType: Array<{
+    roomName: string
+    roomType: string
+    totalUnits: number
+    occupied: number
+    reserved: number
+    available: number
+  }>
+  sampleBookings: {
+    occupied: Array<{
+      roomNumber: string
+      guestName: string
+      roomName: string
+      checkOut: string
+    }>
+    reserved: Array<{
+      roomNumber: string
+      guestName: string
+      roomName: string
+      checkIn: string
+    }>
+  }
+}
+
+export interface Activity {
+  id: string
+  time: string
+  description: string
+  detail: string
+  iconType: 'check-out' | 'check-in' | 'new-booking' | 'inquiry'
+}
+
+// ============================================
+// 11. OPTIONAL: Add Revalidation for Real-time Updates
+// src/app/admin/page.tsx or wherever you use CustomDashboard
+// ============================================
+import { revalidatePath } from 'next/cache'
+import CustomDashboard from '@/components/admin/CustomDashboard'
+
+export const revalidate = 30 // Revalidate every 30 seconds
+
+export default function AdminDashboardPage() {
+  return <CustomDashboard />
+}
+
+// ============================================
+// 12. OPTIONAL: Loading States
+// src/components/admin/CustomDashboard/loading.tsx
+// ============================================
+import { Gutter } from '@payloadcms/ui'
+
+export default function DashboardLoading() {
+  return (
+    <Gutter className="min-h-screen bg-gray-50">
+      <div className="mb-8">
+        <div className="h-10 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
+        <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={i}
+            className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse"
+          >
+            <div className="h-12 bg-gray-200 rounded mb-4"></div>
+            <div className="h-8 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded"></div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="xl:col-span-2 space-y-8">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 h-96 animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-48 mb-6"></div>
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-20 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-2xl border border-gray-200 p-6 h-64 animate-pulse"
+            >
+              <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
+              <div className="space-y-3">
+                {[...Array(2)].map((_, j) => (
+                  <div key={j} className="h-12 bg-gray-200 rounded"></div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Gutter>
+  )
+}

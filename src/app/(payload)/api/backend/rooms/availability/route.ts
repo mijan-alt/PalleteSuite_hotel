@@ -42,37 +42,43 @@ export async function GET(request: Request) {
       depth: 1,
     })
 
-    // Create a map of occupied/reserved room numbers
-    const bookedRoomNumbers = new Set<string>()
-    activeBookings.docs.forEach((booking) => {
-      if (booking.assignedRoomNumber) {
-        bookedRoomNumbers.add(booking.assignedRoomNumber)
-      }
-    })
-
     // Calculate availability for each room type
     const roomAvailability = allRooms.docs.map((room) => {
       const totalUnits = room.totalUnits || 1
       const roomNumbers = room.roomNumbers || []
 
-      // Count how many rooms are occupied/reserved
-      const occupiedRooms = roomNumbers.filter(
-        (rn: any) => bookedRoomNumbers.has(rn.number) && 
-        activeBookings.docs.some(
-          (b) => b.assignedRoomNumber === rn.number && b.status === 'checked-in'
-        )
-      )
+      // Get all bookings for this specific room type
+      const roomBookings = activeBookings.docs.filter((booking) => {
+        const bookingRoomId = typeof booking.room === 'object' ? booking.room.id : booking.room
+        return bookingRoomId === room.id
+      })
 
-      const reservedRooms = roomNumbers.filter(
-        (rn: any) => bookedRoomNumbers.has(rn.number) && 
-        activeBookings.docs.some(
-          (b) => b.assignedRoomNumber === rn.number && b.status === 'confirmed'
-        )
+      // Count occupied rooms (checked-in with assigned room number)
+      const occupiedRooms = roomBookings.filter(
+        (b) => b.status === 'checked-in' && b.assignedRoomNumber,
       )
-
       const occupiedCount = occupiedRooms.length
+
+      // Count reserved rooms (confirmed with assigned room number)
+      const reservedRooms = roomBookings.filter(
+        (b) => b.status === 'confirmed' && b.assignedRoomNumber,
+      )
       const reservedCount = reservedRooms.length
+
+      // Get list of booked room numbers for this room type
+      const bookedRoomNumbers = new Set<string>(
+        [...occupiedRooms, ...reservedRooms]
+          .map((b) => b.assignedRoomNumber)
+          .filter((num): num is string => !!num),
+      )
+
+      // Calculate available count
       const availableCount = totalUnits - bookedRoomNumbers.size
+
+      // Get available room numbers
+      const availableRoomNumbers = roomNumbers
+        .filter((rn: any) => !bookedRoomNumbers.has(rn.number))
+        .map((rn: any) => rn.number)
 
       return {
         roomId: room.id,
@@ -82,9 +88,7 @@ export async function GET(request: Request) {
         occupied: occupiedCount,
         reserved: reservedCount,
         available: availableCount > 0 ? availableCount : 0,
-        availableRoomNumbers: roomNumbers
-          .filter((rn: any) => !bookedRoomNumbers.has(rn.number))
-          .map((rn: any) => rn.number),
+        availableRoomNumbers,
       }
     })
 
@@ -103,26 +107,32 @@ export async function GET(request: Request) {
     const occupiedBookings = activeBookings.docs
       .filter((b) => b.status === 'checked-in' && b.assignedRoomNumber)
       .slice(0, 3)
-      .map((booking) => ({
-        roomNumber: booking.assignedRoomNumber || 'Unassigned',
-        guestName: `${booking.firstName} ${booking.lastName}`,
-        roomName: typeof booking.room === 'object' ? booking.room.name : 'Unknown',
-        roomType: typeof booking.room === 'object' ? booking.room.type : 'Unknown',
-        checkOut: booking.checkOut,
-        status: 'occupied',
-      }))
+      .map((booking) => {
+        const room = typeof booking.room === 'object' ? booking.room : null
+        return {
+          roomNumber: booking.assignedRoomNumber || 'Unassigned',
+          guestName: `${booking.firstName} ${booking.lastName}`,
+          roomName: room?.name || 'Unknown',
+          roomType: room?.type || 'Unknown',
+          checkOut: booking.checkOut,
+          status: 'occupied' as const,
+        }
+      })
 
     const reservedBookings = activeBookings.docs
-      .filter((b) => b.status === 'confirmed')
+      .filter((b) => b.status === 'confirmed' && b.assignedRoomNumber)
       .slice(0, 2)
-      .map((booking) => ({
-        roomNumber: booking.assignedRoomNumber || 'Not Assigned',
-        guestName: `${booking.firstName} ${booking.lastName}`,
-        roomName: typeof booking.room === 'object' ? booking.room.name : 'Unknown',
-        roomType: typeof booking.room === 'object' ? booking.room.type : 'Unknown',
-        checkIn: booking.checkIn,
-        status: 'reserved',
-      }))
+      .map((booking) => {
+        const room = typeof booking.room === 'object' ? booking.room : null
+        return {
+          roomNumber: booking.assignedRoomNumber || 'Not Assigned',
+          guestName: `${booking.firstName} ${booking.lastName}`,
+          roomName: room?.name || 'Unknown',
+          roomType: room?.type || 'Unknown',
+          checkIn: booking.checkIn,
+          status: 'reserved' as const,
+        }
+      })
 
     return NextResponse.json({
       summary: {
@@ -130,7 +140,7 @@ export async function GET(request: Request) {
         occupied: summary.occupied,
         reserved: summary.reserved,
         available: summary.available,
-        cleaning: 0,
+        cleaning: 0, // You can add this logic later if needed
       },
       byRoomType: roomAvailability,
       sampleBookings: {

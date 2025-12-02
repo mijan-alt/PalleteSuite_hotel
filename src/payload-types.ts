@@ -76,6 +76,7 @@ export interface Config {
     faqs: Faq;
     bookings: Booking;
     inquiries: Inquiry;
+    notifications: Notification;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -96,6 +97,7 @@ export interface Config {
     faqs: FaqsSelect<false> | FaqsSelect<true>;
     bookings: BookingsSelect<false> | BookingsSelect<true>;
     inquiries: InquiriesSelect<false> | InquiriesSelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -495,6 +497,8 @@ export interface Category {
   createdAt: string;
 }
 /**
+ * System users and administrators
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
@@ -1192,15 +1196,19 @@ export interface Room {
   slug: string;
   type: 'deluxe' | 'standard' | 'superior' | 'presidential' | 'pearl-harbor' | 'grand-deluxe' | 'federal-grand';
   /**
-   * Generate sequential room numbers (e.g., 101-112). Leave blank to manually add room numbers below.
+   * Generate sequential room numbers (e.g., 101-112). Check "Auto-generate" to apply changes. Leave blank to manually add room numbers below.
    */
   roomNumberRange?: {
     startNumber?: number | null;
     endNumber?: number | null;
     prefix?: string | null;
+    /**
+     * Check this box to regenerate room numbers from the range above. Uncheck to keep manual edits.
+     */
+    autoGenerate?: boolean | null;
   };
   /**
-   * Individual room numbers. Generated automatically if you use the range above, or add manually.
+   * Individual room numbers. Generated automatically when "Auto-generate" is checked, or add/edit manually.
    */
   roomNumbers?:
     | {
@@ -1274,6 +1282,8 @@ export interface Faq {
   createdAt: string;
 }
 /**
+ * Manage all guest reservations - both online and walk-in bookings
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "bookings".
  */
@@ -1281,28 +1291,62 @@ export interface Booking {
   id: number;
   bookingId: string;
   /**
-   * The type of room booked by the guest
+   * How was this booking made?
+   */
+  bookingSource: 'online' | 'walkin' | 'phone';
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  /**
+   * Select the room category - price will auto-populate
    */
   room: number | Room;
+  /**
+   * Number of guests
+   */
+  guests: number;
   /**
    * Select specific room number for this booking
    */
   assignedRoomNumber?: string | null;
   /**
+   * Check-in date
+   */
+  checkIn: string;
+  /**
+   * Check-out date
+   */
+  checkOut: string;
+  /**
+   * ✨ Calculated automatically from dates
+   */
+  totalNights: number;
+  /**
+   * ✨ Auto-filled from room type (editable)
+   */
+  pricePerNight?: number | null;
+  /**
+   * ✨ Calculated: (Price × Nights) - Discount
+   */
+  totalPrice?: number | null;
+  /**
+   * Optional discount - total price updates automatically
+   */
+  discount?: number | null;
+  /**
+   * Track payment for walk-ins
+   */
+  paymentStatus?: ('paid' | 'deposit' | 'unpaid') | null;
+  paymentMethod?: ('cash' | 'card' | 'transfer' | 'online') | null;
+  /**
    * The room number for this completed booking
    */
   completedRoomNumber?: string | null;
-  checkIn: string;
-  checkOut: string;
-  guests: number;
-  totalNights: number;
-  pricePerNight: number;
-  totalPrice: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string | null;
-  status: 'pending' | 'confirmed' | 'checked-in' | 'checked-out' | 'cancelled';
+  /**
+   * Current booking status
+   */
+  status: 'pending' | 'confirmed' | 'checked-in' | 'checked-out' | 'cancelled' | 'no-show';
   actualCheckInTime?: string | null;
   actualCheckOutTime?: string | null;
   updatedAt: string;
@@ -1319,6 +1363,30 @@ export interface Inquiry {
   email: string;
   phone?: string | null;
   message?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  type: 'booking' | 'checkin' | 'checkout' | 'cancellation' | 'inquiry' | 'alert';
+  /**
+   * Link to the related booking
+   */
+  relatedBooking?: (number | null) | Booking;
+  /**
+   * Has this notification been read?
+   */
+  read?: boolean | null;
+  /**
+   * User who should see this notification
+   */
+  userId?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1539,6 +1607,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'inquiries';
         value: number | Inquiry;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: number | Notification;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -2177,6 +2249,7 @@ export interface RoomsSelect<T extends boolean = true> {
         startNumber?: T;
         endNumber?: T;
         prefix?: T;
+        autoGenerate?: T;
       };
   roomNumbers?:
     | T
@@ -2221,19 +2294,23 @@ export interface FaqsSelect<T extends boolean = true> {
  */
 export interface BookingsSelect<T extends boolean = true> {
   bookingId?: T;
-  room?: T;
-  assignedRoomNumber?: T;
-  completedRoomNumber?: T;
-  checkIn?: T;
-  checkOut?: T;
-  guests?: T;
-  totalNights?: T;
-  pricePerNight?: T;
-  totalPrice?: T;
+  bookingSource?: T;
   firstName?: T;
   lastName?: T;
   email?: T;
   phone?: T;
+  room?: T;
+  guests?: T;
+  assignedRoomNumber?: T;
+  checkIn?: T;
+  checkOut?: T;
+  totalNights?: T;
+  pricePerNight?: T;
+  totalPrice?: T;
+  discount?: T;
+  paymentStatus?: T;
+  paymentMethod?: T;
+  completedRoomNumber?: T;
   status?: T;
   actualCheckInTime?: T;
   actualCheckOutTime?: T;
@@ -2250,6 +2327,20 @@ export interface InquiriesSelect<T extends boolean = true> {
   email?: T;
   phone?: T;
   message?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  title?: T;
+  message?: T;
+  type?: T;
+  relatedBooking?: T;
+  read?: T;
+  userId?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -34,7 +34,11 @@ import { MetaImageComponent as MetaImageComponent_a8a977ebc872c5d5ea7ee689724c08
 import { MetaDescriptionComponent as MetaDescriptionComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { PreviewComponent as PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { SlugComponent as SlugComponent_92cc057d0a2abb4f6cf0307edf59f986 } from '@/fields/slug/SlugComponent'
+import { DateRangeCalculator as DateRangeCalculator_6dfd6920b18ea9dd318e1ce717d64565 } from '@/components/DateRangeCalculator'
+import { RoomSelector as RoomSelector_c8acc5395bfbb2d175c6aff6d7b1dc31 } from '@/components/RoomSelector'
+import { AutoPriceField as AutoPriceField_b110fad8af0de7d77b9046bf1edfecb9 } from '@/components/AutoPriceField'
 import { RoomNumberSelect as RoomNumberSelect_89eebbc202b82773178b24856bdc23ff } from '@/components/RoomNumberSelect'
+import { PriceCalculator as PriceCalculator_a17e275ceb0adeb403c8abfca25518b3 } from '@/components/PriceCalculator'
 import { ReadOnlyRoomDisplay as ReadOnlyRoomDisplay_379d02747e2789cfea77f66a54d34ae5 } from '@/components/ReadOnlyRoomDisplay'
 import { LinkToDoc as LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { ReindexButton as ReindexButton_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
@@ -81,7 +85,11 @@ export const importMap = {
   "@payloadcms/plugin-seo/client#MetaDescriptionComponent": MetaDescriptionComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/plugin-seo/client#PreviewComponent": PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@/fields/slug/SlugComponent#SlugComponent": SlugComponent_92cc057d0a2abb4f6cf0307edf59f986,
+  "@/components/DateRangeCalculator#DateRangeCalculator": DateRangeCalculator_6dfd6920b18ea9dd318e1ce717d64565,
+  "@/components/RoomSelector#RoomSelector": RoomSelector_c8acc5395bfbb2d175c6aff6d7b1dc31,
+  "@/components/AutoPriceField#AutoPriceField": AutoPriceField_b110fad8af0de7d77b9046bf1edfecb9,
   "@/components/RoomNumberSelect#RoomNumberSelect": RoomNumberSelect_89eebbc202b82773178b24856bdc23ff,
+  "@/components/PriceCalculator#PriceCalculator": PriceCalculator_a17e275ceb0adeb403c8abfca25518b3,
   "@/components/ReadOnlyRoomDisplay#ReadOnlyRoomDisplay": ReadOnlyRoomDisplay_379d02747e2789cfea77f66a54d34ae5,
   "@payloadcms/plugin-search/client#LinkToDoc": LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634,
   "@payloadcms/plugin-search/client#ReindexButton": ReindexButton_aead06e4cbf6b2620c5c51c9ab283634,

@@ -7,6 +7,9 @@ export const ContactInfo: GlobalConfig = {
   access: {
     read: () => true, // Public
   },
+  admin: {
+    group: 'Site Configuration',
+  },
   fields: [
     {
       type: 'tabs',
@@ -139,16 +142,16 @@ export const ContactInfo: GlobalConfig = {
     },
   ],
 
- hooks: {
+  hooks: {
     afterChange: [
       async ({ req: { payload } }) => {
         payload.logger.info('🔄 Revalidating contact info cache...')
-        
+
         // ✅ ONLY revalidate contact info cache
         // Pages will fetch fresh contact info on next request
         revalidateTag('contact-info')
         revalidateTag('globals')
-        
+
         payload.logger.info('✅ Contact info cache revalidated')
         payload.logger.info('ℹ️  Pages will fetch fresh contact info on next visit')
       },

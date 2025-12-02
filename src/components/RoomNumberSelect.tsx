@@ -51,7 +51,7 @@ export const RoomNumberSelect: React.FC<any> = (props) => {
           params.append('excludeBookingId', String(bookingId))
         }
 
-        const response = await fetch(`/api/bookings/available-rooms?${params.toString()}`, {
+        const response = await fetch(`/api/backend/bookings/available-rooms?${params.toString()}`, {
           credentials: 'include',
         })
 

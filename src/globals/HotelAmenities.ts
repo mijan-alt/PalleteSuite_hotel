@@ -5,6 +5,9 @@ export const HotelAmenities: GlobalConfig = {
   slug: 'hotelAmenities',
   label: 'Hotel Amenities & Facilities',
   access: { read: () => true },
+  admin: {
+    group: 'Site Configuration',
+  },
   fields: [
     {
       name: 'amenities',

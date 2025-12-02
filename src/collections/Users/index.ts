@@ -12,8 +12,10 @@ export const Users: CollectionConfig = {
     update: authenticated,
   },
   admin: {
+    group: 'System',
     defaultColumns: ['name', 'email'],
     useAsTitle: 'name',
+    description: 'System users and administrators',
   },
   auth: true,
   fields: [
@@ -21,7 +23,6 @@ export const Users: CollectionConfig = {
       name: 'name',
       type: 'text',
     },
-  
   ],
   timestamps: true,
 }

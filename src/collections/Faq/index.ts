@@ -1,10 +1,11 @@
 // collections/Faqs.ts
 import { CollectionConfig } from 'payload'
 
-export const Faqs: CollectionConfig<"faqs"> = {
+export const Faqs: CollectionConfig<'faqs'> = {
   slug: 'faqs',
   admin: {
     useAsTitle: 'question',
+    group: 'Content',
   },
   fields: [
     {
@@ -14,7 +15,7 @@ export const Faqs: CollectionConfig<"faqs"> = {
     },
     {
       name: 'answer',
-      type: 'richText', 
+      type: 'richText',
       required: true,
     },
   ],

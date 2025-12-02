@@ -24,21 +24,47 @@ export async function POST(req: NextRequest) {
     const checkInFormatted = format(new Date(body.checkIn), 'EEEE, MMMM d, yyyy')
     const checkOutFormatted = format(new Date(body.checkOut), 'EEEE, MMMM d, yyyy')
     const bookingId = booking.bookingId
+
+    const shouldEmailGuest = body.bookingSource === 'online'
     // —————————————————————————————
     // 3. Send CONFIRMATION to GUEST
     // —————————————————————————————
-    await payload.sendEmail({
-      from: `"Pallete Suites" <${process.env.SMTP_USER}>`,
-      to: body.email,
-      subject: `Booking Confirmed: ${room.name} – Pallete Suites`,
-      html: getGuestEmailHTML({
-        ...body,
-        bookingId,
-        roomName: room.name,
-        checkInFormatted,
-        checkOutFormatted,
-      }),
-    })
+
+    if (shouldEmailGuest) {
+      try {
+        await payload.sendEmail({
+          from: `"Pallete Suites" <${process.env.SMTP_USER}>`,
+          to: body.email,
+          subject: `Booking Confirmed: ${room.name} – Pallete Suites`,
+          html: getGuestEmailHTML({
+            ...body,
+            bookingId,
+            roomName: room.name,
+            checkInFormatted,
+            checkOutFormatted,
+          }),
+        })
+        console.log(`✅ Guest confirmation email sent to ${body.email}`)
+      } catch (emailError) {
+        console.error('Failed to send guest email:', emailError)
+        // Don't fail the entire booking if email fails
+      }
+    } else {
+      console.log(`ℹ️ Skipped guest email (booking source: ${body.bookingSource || 'admin'})`)
+    }
+
+    // await payload.sendEmail({
+    //   from: `"Pallete Suites" <${process.env.SMTP_USER}>`,
+    //   to: body.email,
+    //   subject: `Booking Confirmed: ${room.name} – Pallete Suites`,
+    //   html: getGuestEmailHTML({
+    //     ...body,
+    //     bookingId,
+    //     roomName: room.name,
+    //     checkInFormatted,
+    //     checkOutFormatted,
+    //   }),
+    // })
 
     // —————————————————————————————
     // 4. Send NOTIFICATION to STAFF (multiple recipients)
@@ -185,5 +211,3 @@ function getStaffEmailHTML({
     </div>
   `
 }
-
-

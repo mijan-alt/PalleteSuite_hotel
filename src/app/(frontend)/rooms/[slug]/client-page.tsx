@@ -42,7 +42,7 @@ export function RoomClientPage({ room, businessLocation }: RoomClientPageProps) 
   // Booking state
   const [checkIn, setCheckIn] = useState<Date | undefined>()
   const [checkOut, setCheckOut] = useState<Date | undefined>()
-  const [guests, setGuests] = useState(2)
+  const [guests, setGuests] = useState(1)
 
   // Dialogs
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -78,6 +78,8 @@ export function RoomClientPage({ room, businessLocation }: RoomClientPageProps) 
   const hasImages = images.length > 0
   const showGalleryIcon = images.length > 1
 
+  console.log('number of guests', room.features?.guests)
+
   // Handlers
   const handleBooking = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -101,9 +103,10 @@ export function RoomClientPage({ room, businessLocation }: RoomClientPageProps) 
         email: formData.get('email'),
         phone: formData.get('phone') || undefined,
         status: 'confirmed',
+        bookingSource: 'online',
       }
 
-      const res = await fetch('/api/bookings', {
+      const res = await fetch('/api/frontend/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -404,7 +407,8 @@ export function RoomClientPage({ room, businessLocation }: RoomClientPageProps) 
               <div className="flex flex-wrap gap-8 text-lg">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5" />
-                  {room.features?.guests || 2} guests
+                  {room.features?.guests || 2}{' '}
+                  {`${room.features?.guests === 1 ? 'guest' : 'guests'}`}
                 </div>
                 <div className="flex items-center gap-2">
                   <Bed className="w-5 h-5" />
@@ -810,16 +814,22 @@ export function RoomClientPage({ room, businessLocation }: RoomClientPageProps) 
 
               <div>
                 <Label>Guests</Label>
-                <Select defaultValue={guests.toString()} disabled={isSubmitting}>
+                <Select
+                  defaultValue={guests.toString()}
+                  disabled={isSubmitting}
+                  onValueChange={(value) => setGuests(Number(value))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <SelectItem key={n} value={n.toString()}>
-                        {n} Guest{n > 1 ? 's' : ''}
-                      </SelectItem>
-                    ))}
+                    {Array.from({ length: room.features?.guests || 1 }, (_, i) => i + 1).map(
+                      (n) => (
+                        <SelectItem key={n} value={n.toString()}>
+                          {n} Guest{n > 1 ? 's' : ''}
+                        </SelectItem>
+                      ),
+                    )}
                   </SelectContent>
                 </Select>
               </div>

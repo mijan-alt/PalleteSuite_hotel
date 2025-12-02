@@ -4,8 +4,11 @@ import { GlobalConfig } from 'payload'
 export const BusinessLocation: GlobalConfig = {
   slug: 'businessLocation',
   label: 'Business Location',
+  admin: {
+    group: 'Site Configuration',
+  },
   access: {
-    read: () => true, // Public info
+    read: () => true, 
     update: ({ req: { user } }) => !!user, // Only authenticated users can update
   },
   fields: [
@@ -97,7 +100,8 @@ export const BusinessLocation: GlobalConfig = {
       name: 'mapboxAccessToken',
       type: 'text',
       required: true,
-      defaultValue: 'pk.eyJ1IjoibWlqYW45NiIsImEiOiJjbTNoaXlrZTAwZ3R1MmtxemJxMXl5dTg1In0.LGFILubxj0el0Cb5udh77w',
+      defaultValue:
+        'pk.eyJ1IjoibWlqYW45NiIsImEiOiJjbTNoaXlrZTAwZ3R1MmtxemJxMXl5dTg1In0.LGFILubxj0el0Cb5udh77w',
       admin: {
         description: 'Your Mapbox API access token',
       },

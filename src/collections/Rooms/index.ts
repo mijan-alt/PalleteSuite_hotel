@@ -30,9 +30,13 @@ export const Rooms: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'type', 'totalUnits', 'pricePerNight', 'featured'],
+    group: 'Core Operations',
   },
   access: {
     read: () => true,
+    create: ({ req: { user } }) => !!user, // Allow authenticated users
+    update: ({ req: { user } }) => !!user, // Allow authenticated users
+    delete: ({ req: { user } }) => !!user, // Allow authenticated users
   },
   fields: [
     {
@@ -98,10 +102,20 @@ export const Rooms: CollectionConfig = {
             placeholder: 'e.g., A, B, Pearl-',
           },
         },
+        {
+          name: 'autoGenerate',
+          type: 'checkbox',
+          label: 'Auto-generate room numbers',
+          defaultValue: false,
+          admin: {
+            description:
+              'Check this box to regenerate room numbers from the range above. Uncheck to keep manual edits.',
+          },
+        },
       ],
       admin: {
         description:
-          'Generate sequential room numbers (e.g., 101-112). Leave blank to manually add room numbers below.',
+          'Generate sequential room numbers (e.g., 101-112). Check "Auto-generate" to apply changes. Leave blank to manually add room numbers below.',
       },
     },
 
@@ -120,11 +134,10 @@ export const Rooms: CollectionConfig = {
             placeholder: 'e.g., 101, 201A, Pearl Suite',
           },
         },
-    
       ],
       admin: {
         description:
-          'Individual room numbers. Generated automatically if you use the range above, or add manually.',
+          'Individual room numbers. Generated automatically when "Auto-generate" is checked, or add/edit manually.',
       },
     },
 
@@ -227,8 +240,9 @@ export const Rooms: CollectionConfig = {
           data.slug = formatSlug(data.name)
         }
 
-        // Generate room numbers from range if provided
+        // Only generate room numbers if autoGenerate is explicitly checked
         if (
+          data?.roomNumberRange?.autoGenerate === true &&
           data?.roomNumberRange?.startNumber &&
           data?.roomNumberRange?.endNumber &&
           data.roomNumberRange.startNumber <= data.roomNumberRange.endNumber
@@ -242,7 +256,7 @@ export const Rooms: CollectionConfig = {
             const roomNumber = prefix + i.toString()
             // Calculate floor from room number (e.g., 101 = floor 1, 201 = floor 2)
             const floor = Math.floor(i / 100)
-            
+
             roomNumbers.push({
               number: roomNumber,
               floor: floor > 0 ? floor : undefined,
@@ -251,6 +265,9 @@ export const Rooms: CollectionConfig = {
 
           data.roomNumbers = roomNumbers
           console.log(`Generated ${roomNumbers.length} room numbers`)
+
+          // Reset the checkbox after generation
+          data.roomNumberRange.autoGenerate = false
         }
 
         // Calculate totalUnits from roomNumbers

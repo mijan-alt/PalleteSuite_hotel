@@ -63,6 +63,7 @@ export const Blogs: CollectionConfig<'blogs'> = {
         req,
       }),
     useAsTitle: 'title',
+    group: 'Content',
   },
   fields: [
     {

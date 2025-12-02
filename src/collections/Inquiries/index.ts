@@ -6,6 +6,7 @@ export const Inquiries: CollectionConfig<'inquiries'> = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['room', 'email', 'createdAt'],
+    group: 'Core Operations',
   },
   access: { create: () => true, read: () => true },
   fields: [

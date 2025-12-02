@@ -1,0 +1,161 @@
+// collections/Bookings.ts
+import type { CollectionConfig } from 'payload'
+import type { Field } from 'payload'
+
+// Custom field that dynamically loads room numbers
+const assignedRoomNumberField: Field = {
+  name: 'assignedRoomNumber',
+  label: 'Assigned Room Number',
+  type: 'text',
+  admin: {
+    description: 'Select specific room number for this booking',
+    position: 'sidebar',
+    condition: (data) => !!data.room && data.status !== 'checked-out',
+    components: {
+      Field: {
+        path: '@/components/RoomNumberSelect#RoomNumberSelect',
+        clientProps: {},
+      },
+    },
+  },
+}
+
+export const Bookings: CollectionConfig<'bookings'> = {
+  slug: 'bookings',
+  admin: {
+    useAsTitle: 'bookingId',
+    defaultColumns: [
+      'bookingId',
+      'assignedRoomNumber',
+      'room',
+      'checkIn',
+      'checkOut',
+      'totalPrice',
+      'status',
+      'firstName',
+    ],
+    group: 'Core Operations',
+  },
+  access: {
+    create: () => true,
+    read: ({ req }) => {
+      return !!req.user
+    },
+  },
+
+  fields: [
+    {
+      name: 'bookingId',
+      type: 'text',
+      required: true,
+      unique: true,
+      admin: { readOnly: true },
+    },
+
+    
+    // Room Type (what guest booked)
+    {
+      name: 'room',
+      label: 'Room Type',
+      type: 'relationship',
+      relationTo: 'rooms',
+      required: true,
+      admin: {
+        description: 'The type of room booked by the guest',
+      },
+    },
+    // Specific room number assigned by staff - CUSTOM COMPONENT
+    assignedRoomNumberField as Field,
+    {
+      name: 'completedRoomNumber',
+      label: 'Room Number (Historical)',
+      type: 'text',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        condition: (data) => data.status === 'checked-out' && !!data.assignedRoomNumber,
+        description: 'The room number for this completed booking',
+        components: {
+          Field: {
+            path: '@/components/ReadOnlyRoomDisplay#ReadOnlyRoomDisplay',
+          },
+        },
+      },
+    },
+    { name: 'checkIn', type: 'date', required: true },
+    { name: 'checkOut', type: 'date', required: true },
+    { name: 'guests', type: 'number', required: true, defaultValue: 2 },
+    { name: 'totalNights', type: 'number', required: true },
+    { name: 'pricePerNight', type: 'number', required: true },
+    { name: 'totalPrice', type: 'number', required: true },
+    { name: 'firstName', type: 'text', required: true },
+    { name: 'lastName', type: 'text', required: true },
+    { name: 'email', type: 'email', required: true },
+    { name: 'phone', type: 'text' },
+    {
+      name: 'status',
+      type: 'select',
+      options: [
+        { label: 'Pending', value: 'pending' },
+        { label: 'Confirmed', value: 'confirmed' },
+        { label: 'Checked In', value: 'checked-in' },
+        { label: 'Checked Out', value: 'checked-out' },
+        { label: 'Cancelled', value: 'cancelled' },
+      ],
+      defaultValue: 'pending',
+      required: true,
+    },
+    // Timestamp fields for actual check-in/out
+    {
+      name: 'actualCheckInTime',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        condition: (data) => data.status === 'checked-in' || data.status === 'checked-out',
+      },
+    },
+    {
+      name: 'actualCheckOutTime',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        condition: (data) => data.status === 'checked-out',
+      },
+    },
+  ],
+
+  hooks: {
+    beforeChange: [
+      async ({ data, req, operation, originalDoc }) => {
+        // Generate booking ID on create
+        if (operation === 'create') {
+          const year = new Date().getFullYear()
+          const existingCount = await req.payload.count({
+            collection: 'bookings',
+          })
+          const sequence = String(existingCount.totalDocs + 1).padStart(6, '0')
+          data.bookingId = `PAL-${year}-${sequence}`
+        }
+
+        // Auto-populate actual check-in time when status changes to checked-in
+        if (data.status === 'checked-in' && originalDoc?.status !== 'checked-in') {
+          data.actualCheckInTime = new Date().toISOString()
+
+          // Require room number assignment before checking in
+          if (!data.assignedRoomNumber) {
+            throw new Error('Please assign a room number before checking in the guest.')
+          }
+        }
+
+        // Auto-populate actual check-out time when status changes to checked-out
+        if (data.status === 'checked-out' && originalDoc?.status !== 'checked-out') {
+          data.actualCheckOutTime = new Date().toISOString()
+        }
+
+        return data
+      },
+    ],
+  },
+}
