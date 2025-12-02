@@ -16,7 +16,7 @@ export function WhatsAppInquiryButton({
   room,
   checkIn,
   checkOut,
-  guests = 2, // default fallback
+  guests = 1 
 }: WhatsAppInquiryButtonProps) {
   const [isMobile, setIsMobile] = useState(false)
 
@@ -28,7 +28,7 @@ export function WhatsAppInquiryButton({
   const phoneNumber = '7082642998' // ← YOUR NUMBER HERE (no +, no spaces)
 
   // Build the message intelligently
-  let messageLines = [`Hi Palette Suite,`, `I'm interested in the ${room.name}`]
+  const messageLines = [`Hi Palette Suite,`, `I'm interested in the ${room.name}`]
 
   const hasValidDates = checkIn && checkOut && checkOut > checkIn
   if (hasValidDates) {
@@ -41,9 +41,9 @@ export function WhatsAppInquiryButton({
 
   messageLines.push('', 'Message: ') // blank line + prompt
 
-  const encodedMessage = encodeURIComponent(messageLines.join('\n'))
+  let encodedMessage = encodeURIComponent(messageLines.join('\n'))
 
-  const whatsappUrl = isMobile
+  const  whatsappUrl = isMobile
     ? `https://wa.me/${phoneNumber}?text=${encodedMessage}`
     : `https://web.whatsapp.com/send?phone=${phoneNumber}&text=${encodedMessage}&app_absent=0`
 
