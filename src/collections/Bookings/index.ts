@@ -21,6 +21,15 @@ const assignedRoomNumberField: Field = {
 
 export const Bookings: CollectionConfig<'bookings'> = {
   slug: 'bookings',
+  indexes: [
+    // Single-field indexes (for sorting, filtering, etc.)
+    { fields: ['firstName'] },
+    { fields: ['lastName'] },
+    { fields: ['assignedRoomNumber'] },
+    { fields: ['bookingId'] },
+    { fields: ['status'] },
+    { fields: ['checkIn'] },
+  ],
   admin: {
     useAsTitle: 'bookingId',
     defaultColumns: [
